@@ -424,13 +424,14 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
 
             public async Task Run(HighScore[] scores)
             {
-                using (var db = DatabaseAccess.GetConnection())
-                using (var transaction = await db.BeginTransactionAsync())
-                using (var insertCommand = db.CreateCommand())
-                using (var updateCommand = db.CreateCommand())
+                using (var readConnection = DatabaseAccess.GetConnection())
+                using (var writeConnection = await getWriteConnection())
+                using (var transaction = await writeConnection.BeginTransactionAsync())
+                using (var insertCommand = writeConnection.CreateCommand())
+                using (var updateCommand = writeConnection.CreateCommand())
                 {
                     // check for existing and skip
-                    SoloScoreLegacyIDMap[] existingIds = (await db.QueryAsync<SoloScoreLegacyIDMap>(
+                    SoloScoreLegacyIDMap[] existingIds = (await writeConnection.QueryAsync<SoloScoreLegacyIDMap>(
                         $"SELECT * FROM score_legacy_id_map WHERE `ruleset_id` = {ruleset.RulesetInfo.OnlineID} AND `old_score_id` IN @oldScoreIds",
                         new
                         {
@@ -473,7 +474,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
                             continue;
                         }
 
-                        ScoreInfo referenceScore = await createReferenceScore(ruleset, highScore, db, transaction);
+                        ScoreInfo referenceScore = await createReferenceScore(ruleset, highScore, readConnection, null);
                         string serialisedScore = JsonConvert.SerializeObject(new SoloScoreInfo
                         {
                             // id will be written below in the UPDATE call.
@@ -538,6 +539,13 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
                 }
             }
 
+            private async Task<MySqlConnection> getWriteConnection()
+            {
+                var conn = new MySqlConnection("Server=localhost;Port=3306;Database=osu;User ID=root;ConnectionTimeout=5;ConnectionReset=false;Pooling=true;");
+                await conn.OpenAsync();
+                return conn;
+            }
+
             /// <summary>
             /// Creates a partially-populated "reference" score that provides:
             /// <list type="bullet">
@@ -548,7 +556,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
             /// <item><term><see cref="ScoreInfo.MaximumStatistics"/></term></item>
             /// </list>
             /// </summary>
-            private async Task<ScoreInfo> createReferenceScore(Ruleset ruleset, HighScore highScore, MySqlConnection connection, MySqlTransaction transaction)
+            private async Task<ScoreInfo> createReferenceScore(Ruleset ruleset, HighScore highScore, MySqlConnection connection, MySqlTransaction? transaction)
             {
                 Mod? classicMod = ruleset.CreateMod<ModClassic>();
                 Debug.Assert(classicMod != null);
@@ -659,7 +667,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
             private static readonly ConcurrentDictionary<DifficultyAttributesLookup, Dictionary<int, BeatmapDifficultyAttribute>> attributes_cache =
                 new ConcurrentDictionary<DifficultyAttributesLookup, Dictionary<int, BeatmapDifficultyAttribute>>();
 
-            private static Dictionary<int, BeatmapDifficultyAttribute> queryAttributes(DifficultyAttributesLookup lookup, MySqlConnection connection, MySqlTransaction transaction)
+            private static Dictionary<int, BeatmapDifficultyAttribute> queryAttributes(DifficultyAttributesLookup lookup, MySqlConnection connection, MySqlTransaction? transaction)
             {
                 if (attributes_cache.TryGetValue(lookup, out Dictionary<int, BeatmapDifficultyAttribute>? existing))
                     return existing;
