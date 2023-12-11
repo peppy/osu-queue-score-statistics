@@ -111,7 +111,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
         /// <summary>
         /// The number of seconds between console progress reports.
         /// </summary>
-        private const int seconds_between_report = 2;
+        private const double seconds_between_report = 0.5f;
 
         /// <summary>
         /// The number of seconds between checks for slave latency.
@@ -232,7 +232,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
                     {
                         long currentTimestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-                        if ((currentTimestamp - lastCommitTimestamp) / 1000 >= seconds_between_report)
+                        if ((currentTimestamp - lastCommitTimestamp) / 1000f >= seconds_between_report)
                         {
                             int inserted = Interlocked.Exchange(ref currentReportInsertCount, 0);
                             int updated = Interlocked.Exchange(ref currentReportUpdateCount, 0);
