@@ -442,28 +442,55 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
                             oldScoreIds = scores.Select(s => s.score_id)
                         }, transaction)).ToArray();
 
-                    insertCommand.CommandText =
-                        // main score insert
-                        "INSERT INTO scores (user_id, beatmap_id, ruleset_id, data, has_replay, preserve, created_at, updated_at) "
-                        + $"VALUES (@userId, @beatmapId, {ruleset.RulesetInfo.OnlineID}, @data, @has_replay, 1, @date, @date);"
-                        // pp insert
-                        + "INSERT INTO score_performance (score_id, pp) VALUES (LAST_INSERT_ID(), @pp);"
-                        // mapping insert
-                        + $"INSERT INTO score_legacy_id_map (ruleset_id, old_score_id, score_id) VALUES ({ruleset.RulesetInfo.OnlineID}, @oldScoreId, LAST_INSERT_ID());";
+                    int batchSize;
 
-                    updateCommand.CommandText =
-                        "UPDATE scores SET data = @data WHERE id = @id";
+                    if (!skipExisting)
+                        batchSize = 1;
+                    else
+                    {
+                        if (scores.Length % 5 == 0)
+                            batchSize = 5;
+                        else if (scores.Length % 3 == 0)
+                            batchSize = 3;
+                        else
+                            batchSize = 1;
+                    }
 
-                    var userId = insertCommand.Parameters.Add("userId", MySqlDbType.UInt32);
-                    var oldScoreId = insertCommand.Parameters.Add("oldScoreId", MySqlDbType.UInt64);
-                    var beatmapId = insertCommand.Parameters.Add("beatmapId", MySqlDbType.UInt24);
-                    var data = insertCommand.Parameters.Add("data", MySqlDbType.JSON);
-                    var date = insertCommand.Parameters.Add("date", MySqlDbType.DateTime);
-                    var hasReplay = insertCommand.Parameters.Add("has_replay", MySqlDbType.Bool);
-                    var pp = insertCommand.Parameters.Add("pp", MySqlDbType.Float);
+                    string command = string.Empty;
 
+                    Dictionary<string, MySqlParameter>[] batchParameters = new Dictionary<string, MySqlParameter>[batchSize];
+
+                    for (int i = 0; i < batchSize; i++)
+                    {
+                        command +=
+                            // main score insert
+                            $"INSERT INTO scores (user_id, beatmap_id, ruleset_id, data, has_replay, preserve, created_at, updated_at) "
+                            + $"VALUES (@userId{i}, @beatmapId{i}, {ruleset.RulesetInfo.OnlineID}, @data{i}, @has_replay{i}, 1, @date{i}, @date{i});"
+                            // pp insert
+                            + $"INSERT INTO score_performance (score_id, pp) VALUES (LAST_INSERT_ID(), @pp{i});"
+                            // mapping insert
+                            + $"INSERT INTO score_legacy_id_map (ruleset_id, old_score_id, score_id) VALUES ({ruleset.RulesetInfo.OnlineID}, @oldScoreId{i}, LAST_INSERT_ID());";
+
+                        batchParameters[i] = new Dictionary<string, MySqlParameter>
+                        {
+                            ["userId"] = insertCommand.Parameters.Add($"userId{i}", MySqlDbType.UInt32),
+                            ["oldScoreId"] = insertCommand.Parameters.Add($"oldScoreId{i}", MySqlDbType.UInt64),
+                            ["beatmapId"] = insertCommand.Parameters.Add($"beatmapId{i}", MySqlDbType.UInt24),
+                            ["data"] = insertCommand.Parameters.Add($"data{i}", MySqlDbType.JSON),
+                            ["date"] = insertCommand.Parameters.Add($"date{i}", MySqlDbType.DateTime),
+                            ["hasReplay"] = insertCommand.Parameters.Add($"has_replay{i}", MySqlDbType.Bool),
+                            ["pp"] = insertCommand.Parameters.Add($"pp{i}", MySqlDbType.Float)
+                        };
+                    }
+
+                    insertCommand.CommandText = command;
+
+                    // todo: batching support?
                     var updateData = updateCommand.Parameters.Add("data", MySqlDbType.JSON);
                     var updateId = updateCommand.Parameters.Add("id", MySqlDbType.UInt64);
+                    updateCommand.CommandText = "UPDATE scores SET data = @data WHERE id = @id";
+
+                    int batchIndex = 0;
 
                     foreach (var highScore in scores)
                     {
@@ -519,25 +546,28 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
                         }
                         else
                         {
-                            pp.Value = highScore.pp;
-                            userId.Value = highScore.user_id;
-                            oldScoreId.Value = highScore.score_id;
-                            beatmapId.Value = highScore.beatmap_id;
-                            date.Value = highScore.date;
-                            hasReplay.Value = highScore.replay;
-                            data.Value = serialisedScore;
+                            batchParameters[batchIndex % batchSize]["pp"].Value = highScore.pp;
+                            batchParameters[batchIndex % batchSize]["userId"].Value = highScore.user_id;
+                            batchParameters[batchIndex % batchSize]["oldScoreId"].Value = highScore.score_id;
+                            batchParameters[batchIndex % batchSize]["beatmapId"].Value = highScore.beatmap_id;
+                            batchParameters[batchIndex % batchSize]["date"].Value = highScore.date;
+                            batchParameters[batchIndex % batchSize]["hasReplay"].Value = highScore.replay;
+                            batchParameters[batchIndex % batchSize]["data"].Value = serialisedScore;
 
-                            if (!insertCommand.IsPrepared)
-                                await insertCommand.PrepareAsync();
-                            insertCommand.Transaction = transaction;
+                            if (batchIndex++ % batchSize == 0)
+                            {
+                                if (!insertCommand.IsPrepared)
+                                    await insertCommand.PrepareAsync();
+                                insertCommand.Transaction = transaction;
 
-                            // This could potentially be batched further (ie. to run more SQL statements in a single NonQuery call), but in practice
-                            // this does not improve throughput.
-                            await insertCommand.ExecuteNonQueryAsync();
-                            IndexableSoloScoreIDs.Add(insertCommand.LastInsertedId);
+                                await insertCommand.ExecuteNonQueryAsync();
+                            }
 
-                            Interlocked.Increment(ref currentReportInsertCount);
-                            Interlocked.Increment(ref totalInsertCount);
+                            for (int i = 0; i < batchSize; i++)
+                                IndexableSoloScoreIDs.Add(insertCommand.LastInsertedId - i);
+
+                            Interlocked.Add(ref currentReportInsertCount, batchSize);
+                            Interlocked.Add(ref totalInsertCount, batchSize);
                         }
                     }
 
