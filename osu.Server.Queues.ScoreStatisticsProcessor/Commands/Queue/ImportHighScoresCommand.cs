@@ -448,13 +448,10 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
                         batchSize = 1;
                     else
                     {
-                        if (scores.Length % 5 == 0)
-                            batchSize = 5;
-                        else if (scores.Length % 3 == 0)
-                            batchSize = 3;
-                        else
-                            batchSize = 1;
+                        batchSize = 50;
                     }
+
+                    Console.WriteLine($"Batch size {batchSize} ({scores.Length} scores)");
 
                     string command = string.Empty;
 
@@ -464,12 +461,8 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
                     {
                         command +=
                             // main score insert
-                            $"INSERT INTO scores (user_id, beatmap_id, ruleset_id, data, has_replay, preserve, created_at, updated_at) "
-                            + $"VALUES (@userId{i}, @beatmapId{i}, {ruleset.RulesetInfo.OnlineID}, @data{i}, @has_replay{i}, 1, @date{i}, @date{i});"
-                            // pp insert
-                            + $"INSERT INTO score_performance (score_id, pp) VALUES (LAST_INSERT_ID(), @pp{i});"
-                            // mapping insert
-                            + $"INSERT INTO score_legacy_id_map (ruleset_id, old_score_id, score_id) VALUES ({ruleset.RulesetInfo.OnlineID}, @oldScoreId{i}, LAST_INSERT_ID());";
+                            $"INSERT IGNORE INTO scores (user_id, beatmap_id, ruleset_id, data, has_replay, preserve, created_at, updated_at) "
+                            + $"VALUES (@userId{i}, @beatmapId{i}, {ruleset.RulesetInfo.OnlineID}, @data{i}, @has_replay{i}, 1, @date{i}, @date{i});";
 
                         batchParameters[i] = new Dictionary<string, MySqlParameter>
                         {
@@ -554,24 +547,36 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
                             batchParameters[batchIndex % batchSize]["hasReplay"].Value = highScore.replay;
                             batchParameters[batchIndex % batchSize]["data"].Value = serialisedScore;
 
-                            if (batchIndex++ % batchSize == 0)
-                            {
-                                if (!insertCommand.IsPrepared)
-                                    await insertCommand.PrepareAsync();
-                                insertCommand.Transaction = transaction;
+                            await insert(insertCommand, transaction, false);
+                        }
+                    }
 
-                                await insertCommand.ExecuteNonQueryAsync();
-                            }
+                    if (batchIndex != 0)
+                    {
+                        // TODO: avoid inserting old rows again
+                        await insert(insertCommand, transaction, true);
+                    }
 
+                    await transaction.CommitAsync();
+
+                    async Task insert(MySqlCommand cmd, MySqlTransaction tn, bool force)
+                    {
+                        if (force || batchIndex++ % batchSize == 0)
+                        {
+                            if (!cmd.IsPrepared)
+                                await cmd.PrepareAsync();
+                            cmd.Transaction = tn;
+
+                            await cmd.ExecuteNonQueryAsync();
+
+                            // todo: incorrect for force case.
                             for (int i = 0; i < batchSize; i++)
-                                IndexableSoloScoreIDs.Add(insertCommand.LastInsertedId - i);
+                                IndexableSoloScoreIDs.Add(cmd.LastInsertedId - i);
 
                             Interlocked.Add(ref currentReportInsertCount, batchSize);
                             Interlocked.Add(ref totalInsertCount, batchSize);
                         }
                     }
-
-                    await transaction.CommitAsync();
                 }
             }
 
