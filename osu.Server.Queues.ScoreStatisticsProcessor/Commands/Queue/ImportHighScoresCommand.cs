@@ -475,6 +475,8 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
 
             private async Task run(HighScore[] scores)
             {
+                Console.WriteLine($"Batch inserting {scores.Length} scores");
+
                 using (var db = DatabaseAccess.GetConnection())
                 using (var transaction = await db.BeginTransactionAsync())
                 using (var insertCommand = db.CreateCommand())
@@ -607,6 +609,8 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
 
                     await transaction.CommitAsync();
                 }
+
+                Console.WriteLine($"Batch inserting {scores.Length} scores done");
             }
 
             /// <summary>
