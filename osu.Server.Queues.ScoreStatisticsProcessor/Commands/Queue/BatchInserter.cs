@@ -169,6 +169,19 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
 
                 // check consecutive inserts
 
+                long lastId = db.QuerySingle<long>($"SELECT legacy_score_id FROM scores WHERE id = {insertCommandLastInsertedId}");
+                long firstId = db.QuerySingle<long>($"SELECT legacy_score_id FROM scores WHERE id = {insertCommandLastInsertedId - (ulong)scores.Length}");
+
+                if (lastId != (long)scores.Last().score_id)
+                {
+                    throw new InvalidOperationException("OUT OF ORDER");
+                }
+
+                if (firstId != (long)scores.First().score_id)
+                {
+                    throw new InvalidOperationException("OUT OF ORDER");
+                }
+
                 // TODO: wrong
                 await enqueueForFurtherProcessing(insertCommandLastInsertedId, db, transaction);
 
