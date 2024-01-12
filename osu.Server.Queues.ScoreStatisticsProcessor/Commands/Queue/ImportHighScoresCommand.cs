@@ -83,7 +83,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
         /// The number of scores done in a single processing query. These scores are read in one go, then distributed to parallel insertion workers.
         /// May be adjusted at runtime based on the replication state.
         /// </summary>
-        private const int maximum_scores_per_query = 40000;
+        private const int maximum_scores_per_query = 256000;
 
         /// <summary>
         /// In cases of slave replication latency, this will be the minimum scores processed per top-level query.
@@ -93,7 +93,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
         /// <summary>
         /// The number of scores to run in each batch. Setting this higher will reduce the parallelism and in turn, the throughput of this process.
         /// </summary>
-        private const int mysql_batch_size = 500;
+        private const int mysql_batch_size = 256000;
 
         /// <summary>
         /// The number of seconds between console progress reports.
@@ -105,7 +105,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
         /// </summary>
         private const int seconds_between_latency_checks = 60;
 
-        private int scoresPerQuery = safe_minimum_scores_per_query * 4;
+        private int scoresPerQuery = safe_minimum_scores_per_query * 10;
 
         /// <summary>
         /// The latency a slave is allowed to fall behind before we start to panic.
