@@ -126,7 +126,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
                                                  "SELECT h.*, s.id as new_id FROM osu.score_process_queue "
                                                  + $"LEFT JOIN {highScoreTable} h USING (score_id) "
                                                  + $"LEFT JOIN scores s ON h.score_id = s.legacy_score_id AND s.ruleset_id = {RulesetId} "
-                                                 + $"WHERE queue_id >= @lastQueueId AND mode = {RulesetId} ORDER BY queue_id LIMIT 50", new
+                                                 + $"WHERE queue_id >= @lastQueueId AND hidden = 0 AND mode = {RulesetId} ORDER BY queue_id LIMIT 50", new
                                                  {
                                                      lastQueueId,
                                                      RulesetId,

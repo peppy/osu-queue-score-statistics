@@ -60,7 +60,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
                 {
                     var rulesetSpecifics = LegacyDatabaseHelper.GetRulesetSpecifics(rulesetScores.Key);
 
-                    var highScores = await conn.QueryAsync<HighScore>($"SELECT * FROM {rulesetSpecifics.HighScoreTable} WHERE score_id IN ({string.Join(',', rulesetScores.Select(s => s.legacy_score_id))})");
+                    var highScores = await conn.QueryAsync<HighScore>($"SELECT * FROM {rulesetSpecifics.HighScoreTable} WHERE hidden = 0 AND score_id IN ({string.Join(',', rulesetScores.Select(s => s.legacy_score_id))})");
 
                     foreach (var score in rulesetScores)
                         score.HighScore = highScores.SingleOrDefault(s => s.score_id == score.legacy_score_id!.Value);

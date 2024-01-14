@@ -119,6 +119,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
                     var highScores = await db.QueryAsync<HighScore>($"SELECT h.*, s.id as new_id FROM {highScoreTable} h "
                                                                     + $"LEFT JOIN scores s ON h.score_id = s.legacy_score_id AND s.ruleset_id = {RulesetId} "
                                                                     + "WHERE score_id >= @lastId AND score_id <= @maxProcessableId "
+                                                                    + "AND hidden = 0"
                                                                     + "ORDER BY score_id LIMIT @batchSize", new
                     {
                         lastId = lastProcessedId,
