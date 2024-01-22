@@ -186,6 +186,20 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
                             }
                         }
 
+                        if (!check(importedScore.id, "rank", importedScore.rank, referenceScore.Rank))
+                        {
+                            Interlocked.Increment(ref fail);
+                            requiresIndexing = true;
+
+                            if (!DryRun)
+                            {
+                                await conn.ExecuteAsync("UPDATE scores SET rank = @rank WHERE id = @id", new
+                                {
+                                    rank = referenceScore.Rank,
+                                });
+                            }
+                        }
+
                         if (!check(importedScore.id, "legacy total score", importedScore.legacy_total_score, referenceScore.LegacyTotalScore))
                         {
                             Interlocked.Increment(ref fail);
@@ -253,6 +267,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
             public ulong? legacy_score_id;
             public long? legacy_total_score;
             public long? total_score;
+            public ScoreRank rank;
             public float? pp;
 
             public HighScore? HighScore { get; set; }
