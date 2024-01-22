@@ -228,7 +228,8 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Queue
             scoreInfo.SetCountMiss(highScore.countmiss);
             scoreInfo.SetCountGeki(highScore.countgeki);
             scoreInfo.SetCountKatu(highScore.countkatu);
-            LegacyScoreDecoder.PopulateAccuracy(scoreInfo);
+
+            LegacyScoreDecoder.PopulateLegacyAccuracyAndRank(scoreInfo);
 
             // Trim zero values from statistics.
             scoreInfo.Statistics = scoreInfo.Statistics.Where(kvp => kvp.Value != 0).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
