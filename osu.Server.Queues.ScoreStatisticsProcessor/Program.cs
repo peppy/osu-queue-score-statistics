@@ -22,6 +22,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor
                 cts.Cancel();
 
                 e.Cancel = true;
+
             };
 
             return await CommandLineApplication.ExecuteAsync<Program>(args, cts.Token);
