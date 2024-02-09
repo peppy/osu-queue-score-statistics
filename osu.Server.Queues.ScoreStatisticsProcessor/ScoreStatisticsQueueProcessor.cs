@@ -106,11 +106,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor
 
             try
             {
-                tags.Add($"ruleset:{item.Score.ruleset_id}");
-
-                if (item.Score.legacy_score_id != null)
-                    tags.Add("type:legacy");
-
                 if (item.ProcessHistory?.processed_version == VERSION)
                 {
                     tags.Add("type:skipped");
@@ -119,6 +114,16 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor
 
                 using (var conn = GetDatabaseConnection())
                 {
+                    item.Score ??= conn.QuerySingle<SoloScore>("SELECT * FROM scores WHERE id = @id", new
+                    {
+                        id = item.ScoreId
+                    });
+
+                    tags.Add($"ruleset:{item.Score.ruleset_id}");
+
+                    if (item.Score.legacy_score_id != null)
+                        tags.Add("type:legacy");
+
                     var scoreRow = item.Score;
                     var score = scoreRow.ToScoreInfo();
 

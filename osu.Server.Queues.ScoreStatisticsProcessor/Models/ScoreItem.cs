@@ -13,7 +13,9 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Models
     {
         public ProcessHistory? ProcessHistory;
 
-        public SoloScore Score;
+        public SoloScore? Score;
+
+        public long? ScoreId;
 
         public ScoreItem(SoloScore score, ProcessHistory? history = null)
         {
@@ -24,10 +26,10 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Models
         public void MarkProcessed() =>
             ProcessHistory = new ProcessHistory
             {
-                score_id = (long)Score.id,
+                score_id = ScoreId ?? (long)Score!.id,
                 processed_version = ScoreStatisticsQueueProcessor.VERSION
             };
 
-        public override string ToString() => Score.ToString();
+        public override string ToString() => ScoreId?.ToString() ?? Score!.ToString();
     }
 }
