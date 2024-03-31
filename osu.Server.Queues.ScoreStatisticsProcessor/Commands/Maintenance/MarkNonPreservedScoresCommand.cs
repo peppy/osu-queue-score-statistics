@@ -36,8 +36,14 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
                 int[] userIds = (await db.QueryAsync<int>("SELECT DISTINCT(`user_id`) FROM scores WHERE preserve = 0")).ToArray();
                 Console.WriteLine($"Fetched {userIds.Length} users");
 
+                int totalProcessed = 0;
+
                 foreach (int userId in userIds)
+                {
                     await processUser(db, userId, cancellationToken);
+                    if (totalProcessed++ % 100 == 0)
+                        Console.WriteLine($"Processed {totalProcessed} / {userIds.Length} users");
+                }
             }
 
             return 0;
@@ -50,15 +56,19 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
                 userId,
             };
 
+            Console.Write($"Processing user {userId}");
+
             IEnumerable<SoloScore> scores =
                 await db.QueryAsync<SoloScore>(new CommandDefinition("SELECT * FROM scores WHERE preserve = 1 AND user_id = @userId", parameters, cancellationToken: cancellationToken));
+
+            Console.Write($" ({scores.Count()} scores");
 
             if (!scores.Any())
                 return;
 
             ulong[] pins = db.Query<ulong>("SELECT score_id FROM score_pins WHERE user_id = @userId AND score_type = 'solo_score'", parameters).ToArray();
 
-            Console.WriteLine($"Processing user {userId} ({scores.Count()} scores)..");
+            Console.WriteLine($" {pins.Length} pins)..");
 
             foreach (var score in scores)
             {
