@@ -10,7 +10,6 @@ using Dapper;
 using McMaster.Extensions.CommandLineUtils;
 using MySqlConnector;
 using osu.Server.QueueProcessor;
-using osu.Server.Queues.ScoreStatisticsProcessor.Helpers;
 using osu.Server.Queues.ScoreStatisticsProcessor.Models;
 
 namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
@@ -20,9 +19,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
     {
         private readonly ElasticQueuePusher elasticQueueProcessor = new ElasticQueuePusher();
 
-        [Option(CommandOptionType.SingleValue, Template = "-r|--ruleset", Description = "The ruleset to process.")]
-        public int RulesetId { get; set; }
-
         [Option(CommandOptionType.SingleOrNoValue, Template = "--dry-run", Description = "Don't actually mark, just output.")]
         public bool DryRun { get; set; }
 
@@ -31,16 +27,13 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
 
         public async Task<int> OnExecuteAsync(CancellationToken cancellationToken)
         {
-            LegacyDatabaseHelper.RulesetDatabaseInfo databaseInfo = LegacyDatabaseHelper.GetRulesetSpecifics(RulesetId);
-
-            Console.WriteLine($"Running for ruleset {RulesetId}");
             if (DryRun)
                 Console.WriteLine("RUNNING IN DRY RUN MODE.");
 
             using (var db = DatabaseAccess.GetConnection())
             {
-                Console.WriteLine("Fetching all users...");
-                int[] userIds = (await db.QueryAsync<int>($"SELECT `user_id` FROM {databaseInfo.UserStatsTable}")).ToArray();
+                Console.WriteLine("Fetching all users with recent plays...");
+                int[] userIds = (await db.QueryAsync<int>("SELECT DISTINCT(`user_id`) FROM scores WHERE preserve = 0")).ToArray();
                 Console.WriteLine($"Fetched {userIds.Length} users");
 
                 foreach (int userId in userIds)
@@ -55,15 +48,15 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
             var parameters = new
             {
                 userId,
-                rulesetId = RulesetId,
             };
 
-            IEnumerable<SoloScore> scores = await db.QueryAsync<SoloScore>(new CommandDefinition("SELECT * FROM scores WHERE preserve = 1 AND user_id = @userId AND ruleset_id = @rulesetId", parameters, cancellationToken: cancellationToken));
+            IEnumerable<SoloScore> scores =
+                await db.QueryAsync<SoloScore>(new CommandDefinition("SELECT * FROM scores WHERE preserve = 1 AND user_id = @userId", parameters, cancellationToken: cancellationToken));
 
             if (!scores.Any())
                 return;
 
-            IEnumerable<ulong> pins = db.Query<ulong>("SELECT score_id FROM score_pins WHERE user_id = @userId AND ruleset_id = @rulesetId AND score_type = 'solo_score'", parameters);
+            ulong[] pins = db.Query<ulong>("SELECT score_id FROM score_pins WHERE user_id = @userId AND score_type = 'solo_score'", parameters).ToArray();
 
             Console.WriteLine($"Processing user {userId} ({scores.Count()} scores)..");
 
