@@ -39,7 +39,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Models
         /// <summary>
         /// MySQL transaction for manual retrieval from database.
         /// </summary>
-        public MySqlTransaction Transaction { get; }
+        public MySqlTransaction? Transaction { get; }
 
         /// <param name="score">The score to check for medals.</param>
         /// <param name="userStats">The calculated user statistics after <see cref="Score"/>.</param>
@@ -51,7 +51,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Models
             UserStats userStats,
             DailyChallengeUserStats dailyChallengeUserStats,
             MySqlConnection connection,
-            MySqlTransaction transaction)
+            MySqlTransaction? transaction)
         {
             Score = score;
             UserStats = userStats;

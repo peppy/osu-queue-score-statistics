@@ -203,40 +203,48 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor
                         BeatmapSetId = score.beatmap.beatmapset_id
                     });
 
+                    UserStats? userStats = DatabaseHelper.GetUserStatsAsync(score, conn).Result;
+
+                    if (userStats == null)
+                    {
+                        // ruleset could be invalid
+                        // TODO: add check in client and server to not submit unsupported rulesets
+                        tags.Add("type:no-stats");
+                        return;
+                    }
+
+                    // if required, we can rollback any previous version of processing then reapply with the latest.
+                    if (item.ProcessHistory != null)
+                    {
+                        tags.Add("type:upgraded");
+                        byte version = item.ProcessHistory.processed_version;
+
+                        foreach (var p in enumerateValidProcessors(score))
+                            p.RevertFromUserStats(score, userStats, version, conn);
+                    }
+                    else
+                    {
+                        tags.Add("type:new");
+                    }
+
+                    item.Tags = tags.ToArray();
+
+                    foreach (IProcessor p in enumerateValidProcessors(score))
+                    {
+                        stopwatch.Restart();
+                        p.ApplyToUserStats(score, userStats, conn);
+                        DogStatsd.Timer("apply_time_elapsed", stopwatch.ElapsedMilliseconds, tags: item.Tags.Append($"processor:{p.GetType().ReadableName()}").ToArray());
+                    }
+
                     using (var transaction = conn.BeginTransaction(IsolationLevel.ReadCommitted))
                     {
-                        var userStats = DatabaseHelper.GetUserStatsAsync(score, conn, transaction).Result;
+                        var refetch = DatabaseHelper.GetUserStatsAsync(score, conn, transaction).Result;
 
-                        if (userStats == null)
-                        {
-                            // ruleset could be invalid
-                            // TODO: add check in client and server to not submit unsupported rulesets
-                            tags.Add("type:no-stats");
+                        if (refetch == null)
                             return;
-                        }
 
-                        // if required, we can rollback any previous version of processing then reapply with the latest.
-                        if (item.ProcessHistory != null)
-                        {
-                            tags.Add("type:upgraded");
-                            byte version = item.ProcessHistory.processed_version;
-
-                            foreach (var p in enumerateValidProcessors(score))
-                                p.RevertFromUserStats(score, userStats, version, conn, transaction);
-                        }
-                        else
-                        {
-                            tags.Add("type:new");
-                        }
-
-                        item.Tags = tags.ToArray();
-
-                        foreach (IProcessor p in enumerateValidProcessors(score))
-                        {
-                            stopwatch.Restart();
-                            p.ApplyToUserStats(score, userStats, conn, transaction);
-                            DogStatsd.Timer("apply_time_elapsed", stopwatch.ElapsedMilliseconds, tags: item.Tags.Append($"processor:{p.GetType().ReadableName()}").ToArray());
-                        }
+                        foreach (var change in userStats.Changes)
+                            refetch.Update(change);
 
                         DatabaseHelper.UpdateUserStatsAsync(userStats, conn, transaction).Wait();
 

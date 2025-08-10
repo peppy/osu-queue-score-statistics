@@ -22,15 +22,18 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
 
         public bool RunOnLegacyScores => false;
 
-        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction)
+        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction? transaction)
         {
             if (previousVersion < 2)
                 return;
 
             if (previousVersion < 8)
             {
-                userStats.total_score -= score.total_score;
-                userStats.level = calculateLevel(userStats.total_score);
+                userStats.Update(s =>
+                {
+                    s.total_score -= score.total_score;
+                    s.level = calculateLevel(s.total_score);
+                });
                 return;
             }
 
@@ -39,19 +42,25 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
             if (previousVersion >= 11 && !shouldIncludePlayInTotalScore(score, classicTotalScore))
                 return;
 
-            userStats.total_score -= classicTotalScore;
-            userStats.level = calculateLevel(userStats.total_score);
+            userStats.Update(s =>
+            {
+                s.total_score -= classicTotalScore;
+                s.level = calculateLevel(s.total_score);
+            });
         }
 
-        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction)
+        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction? transaction)
         {
             long classicTotalScore = score.ToScoreInfo().GetDisplayScore(ScoringMode.Classic);
 
             if (!shouldIncludePlayInTotalScore(score, classicTotalScore))
                 return;
 
-            userStats.total_score += classicTotalScore;
-            userStats.level = calculateLevel(userStats.total_score);
+            userStats.Update(s =>
+            {
+                s.total_score += classicTotalScore;
+                s.level = calculateLevel(s.total_score);
+            });
         }
 
         public void ApplyGlobal(SoloScore score, MySqlConnection conn)

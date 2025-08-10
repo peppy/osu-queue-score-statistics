@@ -18,13 +18,13 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
 
         public bool RunOnLegacyScores => false;
 
-        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction)
+        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction? transaction)
         {
             if (previousVersion >= 2)
                 adjustStatisticsFromScore(score, userStats, true);
         }
 
-        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction)
+        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction? transaction)
         {
             adjustStatisticsFromScore(score, userStats);
         }
@@ -46,23 +46,23 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
                 {
                     case HitResult.Miss:
                     case HitResult.LargeTickMiss when score.ruleset_id == 2:
-                        userStats.countMiss += multiplier * count;
+                        userStats.Update(s => s.countMiss += multiplier * count);
                         break;
 
                     case HitResult.Meh:
                     case HitResult.SmallTickHit when score.ruleset_id == 2:
-                        userStats.count50 += multiplier * count;
+                        userStats.Update(s => s.count50 += multiplier * count);
                         break;
 
                     case HitResult.Ok:
                     case HitResult.Good:
                     case HitResult.LargeTickHit when score.ruleset_id == 2:
-                        userStats.count100 += multiplier * count;
+                        userStats.Update(s => s.count100 += multiplier * count);
                         break;
 
                     case HitResult.Great:
                     case HitResult.Perfect:
-                        userStats.count300 += multiplier * count;
+                        userStats.Update(s => s.count300 += multiplier * count);
                         break;
                 }
             }

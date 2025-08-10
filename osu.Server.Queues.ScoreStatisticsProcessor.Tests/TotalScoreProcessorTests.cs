@@ -126,7 +126,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
                 var userStats = await DatabaseHelper.GetUserStatsAsync(score.Score, db, transaction);
 
                 Debug.Assert(userStats != null);
-                userStats.total_score = score.Score.total_score;
+                userStats.Update(s => s.total_score = score.Score.total_score);
                 await DatabaseHelper.UpdateUserStatsAsync(userStats, db, transaction);
 
                 await db.InsertAsync(score.ProcessHistory, transaction);

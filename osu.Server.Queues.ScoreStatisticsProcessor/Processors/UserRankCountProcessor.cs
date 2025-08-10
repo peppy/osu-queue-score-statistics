@@ -21,7 +21,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
 
         public bool RunOnLegacyScores => true;
 
-        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction)
+        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction? transaction)
         {
             if (!score.BeatmapValidForRankedCounts())
                 return;
@@ -46,7 +46,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
             }
         }
 
-        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction)
+        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction? transaction)
         {
             if (!score.BeatmapValidForRankedCounts())
                 return;
@@ -92,23 +92,23 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
             switch (rank)
             {
                 case ScoreRank.XH:
-                    stats.xh_rank_count += delta;
+                    stats.Update(s => s.xh_rank_count += delta);
                     break;
 
                 case ScoreRank.X:
-                    stats.x_rank_count += delta;
+                    stats.Update(s => s.x_rank_count += delta);
                     break;
 
                 case ScoreRank.SH:
-                    stats.sh_rank_count += delta;
+                    stats.Update(s => s.sh_rank_count += delta);
                     break;
 
                 case ScoreRank.S:
-                    stats.s_rank_count += delta;
+                    stats.Update(s => s.s_rank_count += delta);
                     break;
 
                 case ScoreRank.A:
-                    stats.a_rank_count += delta;
+                    stats.Update(s => s.a_rank_count += delta);
                     break;
             }
         }

@@ -22,12 +22,12 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
 
         public bool RunOnLegacyScores => false;
 
-        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction)
+        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction? transaction)
         {
             // TODO: this will require access to stable scores to be implemented correctly.
         }
 
-        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction)
+        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction? transaction)
         {
             Ruleset ruleset = ScoreStatisticsQueueProcessor.AVAILABLE_RULESETS.Single(r => r.RulesetInfo.OnlineID == score.ruleset_id);
 
@@ -39,7 +39,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
                 return;
 
             // TODO: assert the user's score is not higher than the max combo for the beatmap.
-            userStats.max_combo = Math.Max(userStats.max_combo, (ushort)score.max_combo);
+            userStats.Update(s => s.max_combo = Math.Max(s.max_combo, (ushort)score.max_combo));
         }
 
         public void ApplyGlobal(SoloScore score, MySqlConnection conn)

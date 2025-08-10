@@ -17,14 +17,14 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
         public bool RunOnFailedScores => true;
         public bool RunOnLegacyScores => false;
 
-        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction)
+        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction? transaction)
         {
         }
 
-        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction)
+        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction? transaction)
         {
             if (userStats.last_played < score.ended_at || userStats.playcount == 0)
-                userStats.last_played = score.ended_at;
+                userStats.Update(s => s.last_played = score.ended_at);
         }
 
         public void ApplyGlobal(SoloScore score, MySqlConnection conn)

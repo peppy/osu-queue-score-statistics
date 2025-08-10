@@ -25,11 +25,11 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
         public bool RunOnFailedScores => false;
         public bool RunOnLegacyScores => true;
 
-        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction)
+        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction? transaction)
         {
         }
 
-        public void ApplyToUserStats(SoloScore score, UserStats fullRulesetStats, MySqlConnection conn, MySqlTransaction transaction)
+        public void ApplyToUserStats(SoloScore score, UserStats fullRulesetStats, MySqlConnection conn, MySqlTransaction? transaction)
         {
             if (score.ruleset_id != 3)
                 return;
@@ -137,7 +137,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
         }
 
         // local reimplementation of `RankedScoreProcessor` for keymodes.
-        private void updateRankedScore(SoloScore score, UserStatsManiaKeyCount keymodeStats, MySqlConnection conn, MySqlTransaction transaction)
+        private void updateRankedScore(SoloScore score, UserStatsManiaKeyCount keymodeStats, MySqlConnection conn, MySqlTransaction? transaction)
         {
             if (!score.BeatmapValidForRankedCounts())
                 return;
@@ -173,7 +173,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
 
         // local reimplementation of `UserRankCountProcessor` for keymodes.
         // it's a bit unfortunate, but this is the only way this can be implemented for now until `preserve = 0` is set on lazer scores correctly.
-        private void updateRankCounts(SoloScore score, UserStatsManiaKeyCount keymodeStats, MySqlConnection conn, MySqlTransaction transaction)
+        private void updateRankCounts(SoloScore score, UserStatsManiaKeyCount keymodeStats, MySqlConnection conn, MySqlTransaction? transaction)
         {
             if (!score.BeatmapValidForRankedCounts())
                 return;

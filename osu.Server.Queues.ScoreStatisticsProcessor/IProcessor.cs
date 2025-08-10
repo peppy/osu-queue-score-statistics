@@ -28,9 +28,9 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor
         /// </summary>
         bool RunOnLegacyScores { get; }
 
-        void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction);
+        void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction? transaction = null);
 
-        void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction);
+        void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction? transaction = null);
 
         /// <summary>
         /// Adjust any global statistics outside of the user transaction.

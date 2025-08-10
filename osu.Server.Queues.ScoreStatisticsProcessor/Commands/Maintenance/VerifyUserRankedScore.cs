@@ -157,7 +157,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
                             Console.WriteLine();
                         }
 
-                        userStats.ranked_score = totalRankedScore;
+                        userStats.Update(s => s.ranked_score = totalRankedScore);
 
                         if (!DryRun)
                             await DatabaseHelper.UpdateUserStatsAsync(userStats, db, transaction);

@@ -18,7 +18,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
 
         public bool RunOnLegacyScores => false;
 
-        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction)
+        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction? transaction)
         {
             if (!score.BeatmapValidForRankedCounts())
                 return;
@@ -43,7 +43,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
             }
         }
 
-        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction)
+        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction? transaction)
         {
             if (!score.BeatmapValidForRankedCounts())
                 return;
@@ -78,7 +78,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
         private static void updateRankedScore(SoloScore soloScore, UserStats stats, bool revert)
         {
             long delta = soloScore.ToScoreInfo().GetDisplayScore(ScoringMode.Classic) * (revert ? -1 : 1);
-            stats.ranked_score += delta;
+            stats.Update(s => s.ranked_score += delta);
         }
     }
 }

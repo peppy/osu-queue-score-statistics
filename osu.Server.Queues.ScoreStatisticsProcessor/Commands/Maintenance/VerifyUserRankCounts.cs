@@ -153,11 +153,14 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
                         Console.WriteLine();
                     }
 
-                    userStats.a_rank_count = counts[ScoreRank.A];
-                    userStats.s_rank_count = counts[ScoreRank.S];
-                    userStats.sh_rank_count = counts[ScoreRank.SH];
-                    userStats.x_rank_count = counts[ScoreRank.X];
-                    userStats.xh_rank_count = counts[ScoreRank.XH];
+                    userStats.Update(s =>
+                    {
+                        s.a_rank_count = counts[ScoreRank.A];
+                        s.s_rank_count = counts[ScoreRank.S];
+                        s.sh_rank_count = counts[ScoreRank.SH];
+                        s.x_rank_count = counts[ScoreRank.X];
+                        s.xh_rank_count = counts[ScoreRank.XH];
+                    });
 
                     if (!DryRun)
                         await DatabaseHelper.UpdateUserStatsAsync(userStats, db, transaction);

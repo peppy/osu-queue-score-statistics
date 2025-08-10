@@ -25,13 +25,13 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
 
         public bool RunOnLegacyScores => false;
 
-        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction)
+        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction? transaction)
         {
             if (!score.IsValidForPlayTracking(out _) && previousVersion >= 10)
                 return;
 
             if (previousVersion >= 1)
-                userStats.playcount--;
+                userStats.Update(s => s.playcount--);
 
             if (previousVersion >= 3)
             {
@@ -40,7 +40,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
             }
         }
 
-        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction)
+        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction? transaction)
         {
             if (!score.IsValidForPlayTracking(out _))
                 return;
@@ -57,7 +57,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
 
             if (secondsForRecentScores > over_time)
             {
-                userStats.playcount++;
+                userStats.Update(s => s.playcount++);
 
                 adjustUserMonthlyPlaycount(score, conn, transaction);
                 adjustUserBeatmapPlaycount(score, conn, transaction);
@@ -71,7 +71,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
         {
         }
 
-        private static void adjustGlobalPlaycount(MySqlConnection conn, MySqlTransaction transaction)
+        private static void adjustGlobalPlaycount(MySqlConnection conn, MySqlTransaction? transaction)
         {
             // We want to reduce database overhead here, so we only update the global playcount every n plays.
             // Note that we use a non-round number to make the display more natural.
@@ -86,7 +86,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
             }
         }
 
-        private static void adjustGlobalBeatmapPlaycount(SoloScore score, MySqlConnection conn, MySqlTransaction transaction)
+        private static void adjustGlobalBeatmapPlaycount(SoloScore score, MySqlConnection conn, MySqlTransaction? transaction)
         {
             // We want to reduce database overhead here, so we only update the global beatmap playcount every n plays.
             // Note that we use a non-round number to make the display more natural.
@@ -121,7 +121,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
             }
         }
 
-        private static void adjustUserBeatmapPlaycount(SoloScore score, MySqlConnection conn, MySqlTransaction transaction, bool revert = false)
+        private static void adjustUserBeatmapPlaycount(SoloScore score, MySqlConnection conn, MySqlTransaction? transaction, bool revert = false)
         {
             conn.Execute(
                 "INSERT INTO osu_user_beatmap_playcount (beatmap_id, user_id, playcount) VALUES (@beatmap_id, @user_id, @add) ON DUPLICATE KEY UPDATE playcount = GREATEST(0, playcount + @adjust)", new
@@ -133,7 +133,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
                 }, transaction);
         }
 
-        private static void adjustUserMonthlyPlaycount(SoloScore score, MySqlConnection conn, MySqlTransaction transaction, bool revert = false)
+        private static void adjustUserMonthlyPlaycount(SoloScore score, MySqlConnection conn, MySqlTransaction? transaction, bool revert = false)
         {
             DateTimeOffset? date = score.started_at ?? score.ended_at;
 

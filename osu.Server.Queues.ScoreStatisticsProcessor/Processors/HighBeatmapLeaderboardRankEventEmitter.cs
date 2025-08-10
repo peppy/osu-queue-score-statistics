@@ -25,12 +25,12 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
         /// </remarks>
         public bool RunOnLegacyScores => true;
 
-        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction)
+        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction? transaction = null)
         {
             // we're not even trying this. user events are transient and only last 90 days anyway.
         }
 
-        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction)
+        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction? transaction)
         {
             if (DatabaseHelper.IsUserRestricted(conn, userStats.user_id, transaction))
                 return;

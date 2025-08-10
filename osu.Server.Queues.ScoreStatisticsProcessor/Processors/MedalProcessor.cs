@@ -50,11 +50,11 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
         // This processor needs to run after the play count and hit statistics have been applied, at very least.
         public int Order => int.MaxValue;
 
-        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction)
+        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction? transaction)
         {
         }
 
-        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction)
+        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction? transaction)
         {
             if (score.beatmap!.approved <= 0)
                 return;
@@ -94,7 +94,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
             }
         }
 
-        private IEnumerable<Medal> getAvailableMedals(MySqlConnection conn, MySqlTransaction transaction)
+        private IEnumerable<Medal> getAvailableMedals(MySqlConnection conn, MySqlTransaction? transaction)
         {
             return availableMedals ??= conn.Query<Medal>("SELECT * FROM osu_achievements WHERE enabled = 1", transaction: transaction).ToImmutableArray();
         }

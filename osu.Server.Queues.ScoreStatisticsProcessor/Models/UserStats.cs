@@ -2,6 +2,7 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Dapper.Contrib.Extensions;
 
@@ -42,5 +43,13 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Models
         public DateTimeOffset last_update { get; set; } = DateTimeOffset.Now;
         public DateTimeOffset last_played { get; set; } = DateTimeOffset.Now;
         public long total_seconds_played { get; set; }
+
+        public readonly List<Action<UserStats>> Changes = new List<Action<UserStats>>();
+
+        public void Update(Action<UserStats> func)
+        {
+            func(this);
+            Changes.Add(func);
+        }
     }
 }
