@@ -15,7 +15,16 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance.UserTo
     [Command("all", Description = "Updates the total PP of all non-restricted, active users.")]
     public class UpdateAllUserTotalsCommand : PerformanceCommand
     {
+        [Option(Description = "Optional where condition to run against `user_stats` table.", Template = "--where")]
+        public string Where { get; set; } = "1 = 1";
+
         private const int months_before_inactive = 6;
+
+        /// <summary>
+        /// The ruleset to run this on.
+        /// </summary>
+        [Option(CommandOptionType.SingleValue, Template = "--ruleset-id")]
+        public int RulesetId { get; set; }
 
         protected override async Task<int> ExecuteAsync(CancellationToken cancellationToken)
         {
@@ -23,19 +32,20 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance.UserTo
 
             uint[] userIds;
 
-            Console.WriteLine("Fetching all users...");
+            Console.WriteLine("Fetching users...");
 
             using (var db = await DatabaseAccess.GetConnectionAsync(cancellationToken))
             {
                 userIds = (await db.QueryAsync<uint>($"SELECT {databaseInfo.UserStatsTable}.`user_id` FROM {databaseInfo.UserStatsTable} JOIN {databaseInfo.UsersTable} USING (user_id)"
                                                      + $"WHERE user_warnings = 0 "
+                                                     + $"AND {Where} "
                                                      + $"AND DATE_ADD(last_played, INTERVAL {months_before_inactive} MONTH) > NOW()"
                                                      + $"ORDER BY rank_score DESC", commandTimeout: 600)).ToArray();
             }
 
             Console.WriteLine($"Fetched {userIds.Length} users");
 
-            await ProcessUserTotals(userIds, cancellationToken);
+            await ProcessUserTotals(userIds, RulesetId, cancellationToken);
             return 0;
         }
     }

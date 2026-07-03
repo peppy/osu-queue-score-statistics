@@ -24,9 +24,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance
         protected UserTotalPerformanceProcessor TotalProcessor { get; private set; } = null!;
         protected ManiaKeyModeUserStatsProcessor ManiaKeyModeProcessor { get; private set; } = null!;
 
-        [Option(CommandOptionType.SingleValue, Template = "-r|--ruleset", Description = "The ruleset to process score for.")]
-        public int RulesetId { get; set; }
-
         [Option(Description = "Number of threads to use.")]
         public int Threads { get; set; } = 1;
 
@@ -43,21 +40,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance
 
         protected abstract Task<int> ExecuteAsync(CancellationToken cancellationToken);
 
-        /// <summary>
-        /// Parses a comma-separated list of IDs from a given input string.
-        /// </summary>
-        /// <param name="input">The input string.</param>
-        /// <returns>The IDs.</returns>
-        protected static uint[] ParseIntIds(string input) => input.Split(',').Select(uint.Parse).ToArray();
-
-        /// <summary>
-        /// Parses a comma-separated list of IDs from a given input string.
-        /// </summary>
-        /// <param name="input">The input string.</param>
-        /// <returns>The IDs.</returns>
-        protected static ulong[] ParseLongIds(string input) => input.Split(',').Select(ulong.Parse).ToArray();
-
-        protected async Task ProcessUserTotals(uint[] userIds, CancellationToken cancellationToken)
+        protected async Task ProcessUserTotals(uint[] userIds, int rulesetId, CancellationToken cancellationToken)
         {
             if (userIds.Length == 0)
             {
@@ -71,13 +54,13 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance
 
             await ProcessPartitioned(userIds, async (db, transaction, userId) =>
             {
-                var userStats = await DatabaseHelper.GetUserStatsAsync(userId, RulesetId, db, transaction);
+                var userStats = await DatabaseHelper.GetUserStatsAsync(userId, rulesetId, db, transaction);
 
                 if (userStats == null)
                     return;
 
                 // Mania per-key ranking statistic updates.
-                if (RulesetId == 3)
+                if (rulesetId == 3)
                 {
                     await updateKeyStats(4);
                     await updateKeyStats(7);
@@ -110,7 +93,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance
                 double rankScoreBefore = userStats.rank_score;
                 double accBefore = userStats.accuracy_new;
 
-                await TotalProcessor.UpdateUserStatsAsync(userStats, RulesetId, db, transaction);
+                await TotalProcessor.UpdateUserStatsAsync(userStats, rulesetId, db, transaction);
 
                 if (Math.Abs(rankScoreBefore - userStats.rank_score) > 0.1 ||
                     Math.Abs(accBefore - userStats.accuracy_new) > 0.1)
@@ -120,26 +103,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance
 
                 if (Interlocked.Increment(ref processedCount) % 1000 == 0)
                     Console.WriteLine($"Processed {processedCount} of {userIds.Length} (current id {userStats.user_id})");
-            }, cancellationToken);
-        }
-
-        protected async Task ProcessUserScores(uint[] userIds, CancellationToken cancellationToken)
-        {
-            if (userIds.Length == 0)
-            {
-                Console.WriteLine("No matching users to process!");
-                return;
-            }
-
-            Console.WriteLine($"Processing user scores for {userIds.Length} users");
-
-            int processedCount = 0;
-
-            await ProcessPartitioned(userIds, async (conn, transaction, userId) =>
-            {
-                await ScoreProcessor.ProcessUserScoresAsync(userId, RulesetId, conn, transaction, cancellationToken: cancellationToken);
-
-                Console.WriteLine($"Processed {Interlocked.Increment(ref processedCount)} of {userIds.Length}");
             }, cancellationToken);
         }
 

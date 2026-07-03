@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
 using MySqlConnector;
@@ -51,62 +50,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
 
         public void ApplyGlobal(SoloScore score, MySqlConnection conn)
         {
-        }
-
-        /// <summary>
-        /// Processes the raw PP value of all scores from a specified user.
-        /// </summary>
-        /// <param name="userId">The user to process all scores of.</param>
-        /// <param name="rulesetId">The ruleset for which scores should be processed.</param>
-        /// <param name="connection">The <see cref="MySqlConnection"/>.</param>
-        /// <param name="transaction">An existing transaction.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The number of scores which had their performance values updated.</returns>
-        public async Task<int> ProcessUserScoresAsync(uint userId, int rulesetId, MySqlConnection connection, MySqlTransaction? transaction = null, CancellationToken cancellationToken = default)
-        {
-            var scores = (await connection.QueryAsync<SoloScore>("SELECT * FROM scores WHERE `user_id` = @UserId AND `ruleset_id` = @RulesetId", new
-            {
-                UserId = userId,
-                RulesetId = rulesetId
-            }, transaction: transaction)).ToArray();
-
-            if (!scores.Any())
-                return 0;
-
-            int totalUpdated = 0;
-
-            foreach (SoloScore score in scores)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                    break;
-
-                if (await ProcessScoreAsync(score, connection, transaction))
-                    totalUpdated++;
-            }
-
-            return totalUpdated;
-        }
-
-        /// <summary>
-        /// Processes the raw PP value of a given score.
-        /// </summary>
-        /// <param name="scoreId">The score to process.</param>
-        /// <param name="connection">The <see cref="MySqlConnection"/>.</param>
-        /// <param name="transaction">An existing transaction.</param>
-        public async Task ProcessScoreAsync(ulong scoreId, MySqlConnection connection, MySqlTransaction? transaction = null)
-        {
-            var score = await connection.QuerySingleOrDefaultAsync<SoloScore>("SELECT * FROM scores WHERE `id` = @ScoreId", new
-            {
-                ScoreId = scoreId
-            }, transaction: transaction);
-
-            if (score == null)
-            {
-                await Console.Error.WriteLineAsync($"Could not find score ID {scoreId}.");
-                return;
-            }
-
-            await ProcessScoreAsync(score, connection, transaction);
         }
 
         /// <summary>
