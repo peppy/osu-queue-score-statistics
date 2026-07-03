@@ -36,7 +36,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance.Scores
         [Option(Description = "The maximum PP of a score to reprocess.", LongName = "max-pp", ShortName = "pu")]
         public float? MaxPP { get; set; }
 
-        [Option(Description = "Optional where clause", Template = "--where")]
+        [Option(Description = "Optional where condition to run against `scores` table.", Template = "--where")]
         public string Where { get; set; } = "1 = 1";
 
         /// <summary>
@@ -63,8 +63,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance.Scores
 
         protected override async Task<int> ExecuteAsync(CancellationToken cancellationToken)
         {
-            // TODO: ruleset parameter is in base class but unused.
-
             using var db = await DatabaseAccess.GetConnectionAsync(cancellationToken);
 
             ulong currentScoreId = From;

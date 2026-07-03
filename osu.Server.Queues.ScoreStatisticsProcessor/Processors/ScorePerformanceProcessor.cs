@@ -90,28 +90,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
         /// <summary>
         /// Processes the raw PP value of a given score.
         /// </summary>
-        /// <param name="scoreId">The score to process.</param>
-        /// <param name="connection">The <see cref="MySqlConnection"/>.</param>
-        /// <param name="transaction">An existing transaction.</param>
-        public async Task ProcessScoreAsync(ulong scoreId, MySqlConnection connection, MySqlTransaction? transaction = null)
-        {
-            var score = await connection.QuerySingleOrDefaultAsync<SoloScore>("SELECT * FROM scores WHERE `id` = @ScoreId", new
-            {
-                ScoreId = scoreId
-            }, transaction: transaction);
-
-            if (score == null)
-            {
-                await Console.Error.WriteLineAsync($"Could not find score ID {scoreId}.");
-                return;
-            }
-
-            await ProcessScoreAsync(score, connection, transaction);
-        }
-
-        /// <summary>
-        /// Processes the raw PP value of a given score.
-        /// </summary>
         /// <param name="score">The score to process.</param>
         /// <param name="connection">The <see cref="MySqlConnection"/>.</param>
         /// <param name="transaction">An existing transaction.</param>
