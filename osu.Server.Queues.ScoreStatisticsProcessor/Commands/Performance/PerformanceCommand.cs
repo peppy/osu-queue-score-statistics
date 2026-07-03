@@ -106,26 +106,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance
             }, cancellationToken);
         }
 
-        protected async Task ProcessUserScores(uint[] userIds, int rulesetId, CancellationToken cancellationToken)
-        {
-            if (userIds.Length == 0)
-            {
-                Console.WriteLine("No matching users to process!");
-                return;
-            }
-
-            Console.WriteLine($"Processing user scores for {userIds.Length} users");
-
-            int processedCount = 0;
-
-            await ProcessPartitioned(userIds, async (conn, transaction, userId) =>
-            {
-                await ScoreProcessor.ProcessUserScoresAsync(userId, rulesetId, conn, transaction, cancellationToken: cancellationToken);
-
-                Console.WriteLine($"Processed {Interlocked.Increment(ref processedCount)} of {userIds.Length}");
-            }, cancellationToken);
-        }
-
         protected async Task ProcessPartitioned<T>(IEnumerable<T> values, Func<MySqlConnection, MySqlTransaction, T, Task> processFunc, CancellationToken cancellationToken)
         {
             const int max_transaction_size = 50;
