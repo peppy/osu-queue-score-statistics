@@ -48,8 +48,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
             if (DryRun)
                 Console.WriteLine("RUNNING IN DRY RUN MODE.");
 
-            await Task.Delay(5000, cancellationToken);
-
             // prefetch a mapping of lazer / tachyon build IDs to string versions for later use.
             // note that `osu_builds` has two kinds of rows for builds: "main" rows (with `stream_id` set),
             // and "platform-specific" rows (with platform suffixes in `version`, as well as null `stream_id`).

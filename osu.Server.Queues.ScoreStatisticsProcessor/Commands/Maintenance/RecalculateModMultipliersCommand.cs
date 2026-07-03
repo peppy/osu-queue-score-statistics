@@ -71,8 +71,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
                 Console.WriteLine($"Indexing to elastic queue(s) {elasticQueuePusher.ActiveQueues}");
             }
 
-            await Task.Delay(5000, cancellationToken);
-
             while (!cancellationToken.IsCancellationRequested)
             {
                 var scoresWithMods = (await conn.QueryAsync<SoloScore>(
