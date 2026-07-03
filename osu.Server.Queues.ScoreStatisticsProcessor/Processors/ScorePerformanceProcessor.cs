@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using MySqlConnector;
+using osu.Framework.Extensions;
 using osu.Game.Rulesets;
 using osu.Game.Rulesets.Difficulty;
 using osu.Game.Rulesets.Mods;
@@ -45,7 +46,45 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
 
         public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction, List<Action> postTransactionActions, DogStatsdService dogStatsd)
         {
-            ProcessScoreAsync(score, conn, transaction).Wait();
+            double? valueBeforeProcessing = score.pp;
+
+            try
+            {
+                if (ProcessScoreAsync(score, conn, transaction).GetResultSafely())
+                {
+                    if (score.is_legacy_score && write_legacy_score_pp)
+                    {
+                        var helper = LegacyDatabaseHelper.GetRulesetSpecifics(score.ruleset_id);
+                        conn.Execute($"UPDATE scores SET pp = @Pp WHERE id = @ScoreId; UPDATE {helper.HighScoreTable} SET pp = @Pp WHERE score_id = @LegacyScoreId", new
+                        {
+                            ScoreId = score.id,
+                            LegacyScoreId = score.legacy_score_id,
+                            Pp = score.pp,
+                        }, transaction: transaction);
+                    }
+                    else
+                    {
+                        conn.Execute("UPDATE scores SET pp = @Pp WHERE id = @ScoreId", new
+                        {
+                            ScoreId = score.id,
+                            Pp = score.pp,
+                        }, transaction: transaction);
+                    }
+                }
+            }
+            catch
+            {
+                // WARNING: PP value must be restored if anything fails here.
+                //
+                // The reason for this is to cover off the case wherein the database writes FAIL.
+                // In such a case, the score will be re-queued for processing again to cover off transient failures -
+                // however, the re-queue process takes the `score` model verbatim, RE-SERIALISES IT to JSON, and then re-enqueues THAT.
+                // this means that if the write below is permitted to occur BEFORE the value is written to database,
+                // on the next retry the state of the score will be INCONSISTENT with the database
+                // because the database write of pp HAS NOT ACTUALLY HAPPENED
+                // but the score model as written to and then read from redis WILL HAVE PP POPULATED.
+                score.pp = valueBeforeProcessing;
+            }
         }
 
         public void ApplyGlobal(SoloScore score, MySqlConnection conn)
@@ -53,8 +92,17 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
         }
 
         /// <summary>
-        /// Processes the raw PP value of a given score.
+        /// Processes the raw PP value of a given score, updating it if required.
         /// </summary>
+        /// <remarks>
+        /// There are many preconditions that need to be satisfied for an update to occur:
+        /// - Is a passing score
+        /// - Has a beatmap attached
+        /// - Is not blacklisted for pp attribution
+        /// - Mods are value for pp purposes
+        /// - Score is set on a client build which is allowed to submit pp gaining scores
+        /// - PP value changed by over 0.1 from any existing value.
+        /// </remarks>
         /// <param name="score">The score to process.</param>
         /// <param name="connection">The <see cref="MySqlConnection"/>.</param>
         /// <param name="transaction">An existing transaction.</param>
@@ -83,7 +131,8 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
 
             // Performance needs to be allowed for the build.
             // legacy scores don't need a build id
-            if (check_client_version && score.legacy_score_id == null && (score.build_id == null || (await buildStore.GetBuildAsync(score.build_id.Value, connection, transaction))?.allow_performance != true))
+            if (check_client_version && score.legacy_score_id == null
+                                     && (score.build_id == null || (await buildStore.GetBuildAsync(score.build_id.Value, connection, transaction))?.allow_performance != true))
                 return false;
 
             DifficultyAttributes difficultyAttributes = await BeatmapStore.GetDifficultyAttributesAsync(beatmap, ruleset, mods, connection, transaction);
@@ -103,35 +152,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
                     + (score.is_legacy_score ? " LEGACY" : string.Empty));
             }
 
-            if (score.is_legacy_score && write_legacy_score_pp)
-            {
-                var helper = LegacyDatabaseHelper.GetRulesetSpecifics(score.ruleset_id);
-                await connection.ExecuteAsync($"UPDATE scores SET pp = @Pp WHERE id = @ScoreId; UPDATE {helper.HighScoreTable} SET pp = @Pp WHERE score_id = @LegacyScoreId", new
-                {
-                    ScoreId = score.id,
-                    LegacyScoreId = score.legacy_score_id,
-                    Pp = performanceAttributes.Total,
-                }, transaction: transaction);
-            }
-            else
-            {
-                await connection.ExecuteAsync("UPDATE scores SET pp = @Pp WHERE id = @ScoreId", new
-                {
-                    ScoreId = score.id,
-                    Pp = performanceAttributes.Total,
-                }, transaction: transaction);
-            }
-
-            // WARNING: This write must occur LAST, AFTER the database writes.
-            // The reason for this is to cover off the case wherein the database writes FAIL.
-            // In such a case, the score will be re-queued for processing again to cover off transient failures -
-            // however, the re-queue process takes the `score` model verbatim, RE-SERIALISES IT to JSON, and then re-enqueues THAT.
-            // this means that if the write below is permitted to occur BEFORE the value is written to database,
-            // on the next retry the state of the score will be INCONSISTENT with the database
-            // because the database write of pp HAS NOT ACTUALLY HAPPENED
-            // but the score model as written to and then read from redis WILL HAVE PP POPULATED.
             score.pp = performanceAttributes.Total;
-
             return true;
         }
 
