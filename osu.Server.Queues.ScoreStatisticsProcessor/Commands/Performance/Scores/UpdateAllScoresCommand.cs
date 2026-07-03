@@ -57,18 +57,15 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance.Scores
         /// </summary>
         private readonly ConcurrentQueue<MySqlConnection> connections = new ConcurrentQueue<MySqlConnection>();
 
-        private readonly ElasticQueuePusher? elasticQueueProcessor;
+        private ElasticQueuePusher? elasticQueueProcessor;
 
         private readonly ConcurrentBag<ElasticQueuePusher.ElasticScoreItem> elasticItems = new ConcurrentBag<ElasticQueuePusher.ElasticScoreItem>();
 
-        public UpdateAllScoresCommand()
+        protected override async Task<int> ExecuteAsync(CancellationToken cancellationToken)
         {
             if (RunIndexing)
                 elasticQueueProcessor = new ElasticQueuePusher();
-        }
 
-        protected override async Task<int> ExecuteAsync(CancellationToken cancellationToken)
-        {
             using var db = await DatabaseAccess.GetConnectionAsync(cancellationToken);
 
             ulong currentScoreId = From;
