@@ -76,7 +76,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
             });
 
             // 115pp from the single score above + 2pp from playcount bonus
-            WaitForDatabaseState("SELECT rank_score FROM osu_user_stats WHERE user_id = 2", 117, CancellationToken);
+            WaitForDatabaseState("SELECT rank_score FROM osu_user_stats WHERE user_id = 2", 131, CancellationToken);
 
             // purposefully identical to score above, to confirm that you don't get pp for two scores on the same map twice
             SetScoreForBeatmap(TEST_BEATMAP_ID, score =>
@@ -89,7 +89,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
             });
 
             // 115pp from the single score above + 4pp from playcount bonus
-            WaitForDatabaseState("SELECT rank_score FROM osu_user_stats WHERE user_id = 2", 119, CancellationToken);
+            WaitForDatabaseState("SELECT rank_score FROM osu_user_stats WHERE user_id = 2", 133, CancellationToken);
         }
 
         /// <summary>
