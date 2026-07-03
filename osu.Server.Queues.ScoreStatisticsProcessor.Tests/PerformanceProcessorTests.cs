@@ -75,7 +75,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
                 score.Score.preserve = true;
             });
 
-            // 115pp from the single score above + 2pp from playcount bonus
+            // 129pp from the single score above + 2pp from playcount bonus
             WaitForDatabaseState("SELECT rank_score FROM osu_user_stats WHERE user_id = 2", 131, CancellationToken);
 
             // purposefully identical to score above, to confirm that you don't get pp for two scores on the same map twice
@@ -88,7 +88,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
                 score.Score.preserve = true;
             });
 
-            // 115pp from the single score above + 4pp from playcount bonus
+            // 129pp from the single score above + 4pp from playcount bonus
             WaitForDatabaseState("SELECT rank_score FROM osu_user_stats WHERE user_id = 2", 133, CancellationToken);
         }
 
