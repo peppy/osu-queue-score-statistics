@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Data;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -123,9 +123,13 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance.Scores
 
                 await Task.WhenAll(Partitioner.Create(scores).GetPartitions(Threads).Select(async partition =>
                 {
+                    List<(ulong id, double val)> updates = new List<(ulong id, double val)>();
+                    Dictionary<ushort, List<(ulong id, double val)>> legacyUpdates = new Dictionary<ushort, List<(ulong id, double val)>>();
+
                     connections.TryDequeue(out var connection);
 
-                    using (var transaction = await connection!.BeginTransactionAsync(IsolationLevel.ReadUncommitted, cancellationToken))
+                    Debug.Assert(connection != null);
+
                     using (partition)
                     {
                         while (partition.MoveNext())
@@ -133,23 +137,42 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance.Scores
                             if (cancellationToken.IsCancellationRequested)
                                 return;
 
+                            var score = partition.Current;
+
                             try
                             {
-                                bool changed = await ScoreProcessor.ProcessScoreAsync(partition.Current, connection, transaction);
+                                bool changed = await ScoreProcessor.ProcessScoreAsync(score, connection);
 
                                 if (changed)
                                 {
+                                    // pp is guaranteed to be non-null after this processing pathway.
+                                    updates.Add((score.id, score.pp!.Value));
+
+                                    if (score.is_legacy_score)
+                                    {
+                                        if (!legacyUpdates.TryGetValue(score.ruleset_id, out var legacyRulesetUpdates))
+                                            legacyUpdates[score.ruleset_id] = legacyRulesetUpdates = new List<(ulong id, double val)>();
+
+                                        legacyRulesetUpdates.Add((score.id, score.pp!.Value));
+                                    }
+
                                     Interlocked.Increment(ref changedPp);
-                                    elasticItems.Add(new ElasticQueuePusher.ElasticScoreItem { ScoreId = (long?)partition.Current.id });
+                                    elasticItems.Add(new ElasticQueuePusher.ElasticScoreItem { ScoreId = (long?)score.id });
                                 }
                             }
                             catch (Exception e)
                             {
-                                Console.WriteLine($"Failed to process score {partition.Current.id}: {e}");
+                                Console.WriteLine($"Failed to process score {score.id}: {e}");
                             }
                         }
+                    }
 
-                        await transaction.CommitAsync(cancellationToken);
+                    DatabaseHelper.BatchUpdateScoresTable(connection, "scores", "id", "pp", updates);
+
+                    foreach (var kvp in legacyUpdates)
+                    {
+                        var ruleset = LegacyDatabaseHelper.GetRulesetSpecifics(kvp.Key);
+                        DatabaseHelper.BatchUpdateScoresTable(connection, ruleset.HighScoreTable, "score_id", "pp", kvp.Value);
                     }
 
                     connections.Enqueue(connection);
