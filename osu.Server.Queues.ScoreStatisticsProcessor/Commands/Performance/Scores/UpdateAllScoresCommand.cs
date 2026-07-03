@@ -57,9 +57,15 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance.Scores
         /// </summary>
         private readonly ConcurrentQueue<MySqlConnection> connections = new ConcurrentQueue<MySqlConnection>();
 
-        private readonly ElasticQueuePusher elasticQueueProcessor = new ElasticQueuePusher();
+        private readonly ElasticQueuePusher? elasticQueueProcessor;
 
         private readonly ConcurrentBag<ElasticQueuePusher.ElasticScoreItem> elasticItems = new ConcurrentBag<ElasticQueuePusher.ElasticScoreItem>();
+
+        public UpdateAllScoresCommand()
+        {
+            if (RunIndexing)
+                elasticQueueProcessor = new ElasticQueuePusher();
+        }
 
         protected override async Task<int> ExecuteAsync(CancellationToken cancellationToken)
         {
@@ -183,7 +189,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance.Scores
 
                 if (RunIndexing && elasticItems.Count > 0)
                 {
-                    elasticQueueProcessor.PushToQueue(elasticItems.ToList());
+                    elasticQueueProcessor!.PushToQueue(elasticItems.ToList());
                     Console.WriteLine($"Queued {elasticItems.Count} items for indexing");
                 }
 
