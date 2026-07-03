@@ -43,20 +43,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance
 
         protected abstract Task<int> ExecuteAsync(CancellationToken cancellationToken);
 
-        /// <summary>
-        /// Parses a comma-separated list of IDs from a given input string.
-        /// </summary>
-        /// <param name="input">The input string.</param>
-        /// <returns>The IDs.</returns>
-        protected static uint[] ParseIntIds(string input) => input.Split(',').Select(uint.Parse).ToArray();
-
-        /// <summary>
-        /// Parses a comma-separated list of IDs from a given input string.
-        /// </summary>
-        /// <param name="input">The input string.</param>
-        /// <returns>The IDs.</returns>
-        protected static ulong[] ParseLongIds(string input) => input.Split(',').Select(ulong.Parse).ToArray();
-
         protected async Task ProcessUserTotals(uint[] userIds, CancellationToken cancellationToken)
         {
             if (userIds.Length == 0)
