@@ -20,6 +20,12 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance.UserTo
 
         private const int months_before_inactive = 6;
 
+        /// <summary>
+        /// The ruleset to run this on.
+        /// </summary>
+        [Option(CommandOptionType.SingleValue, Template = "--ruleset-id")]
+        public int RulesetId { get; set; }
+
         protected override async Task<int> ExecuteAsync(CancellationToken cancellationToken)
         {
             LegacyDatabaseHelper.RulesetDatabaseInfo databaseInfo = LegacyDatabaseHelper.GetRulesetSpecifics(RulesetId);
@@ -39,7 +45,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance.UserTo
 
             Console.WriteLine($"Fetched {userIds.Length} users");
 
-            await ProcessUserTotals(userIds, cancellationToken);
+            await ProcessUserTotals(userIds, RulesetId, cancellationToken);
             return 0;
         }
     }
