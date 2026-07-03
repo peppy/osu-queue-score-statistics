@@ -173,12 +173,12 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance.Scores
                         }
                     }
 
-                    DatabaseHelper.BatchUpdateScoresTable(connection, "scores", "id", "pp", updates);
+                    DatabaseHelper.BatchUpdateScoresTable(connection, tableName: "scores", idColumnName: "id", valueColumnName: "pp", updates);
 
                     foreach (var kvp in legacyUpdates)
                     {
                         var ruleset = LegacyDatabaseHelper.GetRulesetSpecifics(kvp.Key);
-                        DatabaseHelper.BatchUpdateScoresTable(connection, ruleset.HighScoreTable, "score_id", "pp", kvp.Value);
+                        DatabaseHelper.BatchUpdateScoresTable(connection, tableName: ruleset.HighScoreTable, idColumnName: "score_id", valueColumnName: "pp", kvp.Value);
                     }
 
                     connections.Enqueue(connection);

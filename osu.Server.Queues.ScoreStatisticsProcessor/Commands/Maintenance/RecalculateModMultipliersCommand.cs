@@ -205,7 +205,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
             {
                 if (!DryRun)
                 {
-                    DatabaseHelper.BatchUpdateScoresTable(conn, "scores", "id", "total_score", pendingUpdates);
+                    DatabaseHelper.BatchUpdateScoresTable(conn, tableName: "scores", idColumnName: "id", valueColumnName: "total_score", pendingUpdates);
 
                     if (RunIndexing && elasticItems.Count > 0)
                     {
