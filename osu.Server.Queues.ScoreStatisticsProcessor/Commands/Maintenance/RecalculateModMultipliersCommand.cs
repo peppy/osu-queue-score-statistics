@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
@@ -200,30 +199,13 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
             return 0;
         }
 
-        private readonly StringBuilder statementBuilder = new StringBuilder();
-
         private void flush(MySqlConnection conn, bool force = false)
         {
             if (pendingUpdates.Count >= FlushSize || force)
             {
                 if (!DryRun)
                 {
-                    if (pendingUpdates.Count > 0)
-                    {
-                        Console.WriteLine($"Flushing sql updates ({pendingUpdates.Count:N0} rows)");
-
-                        statementBuilder.Clear();
-                        statementBuilder.AppendLine("UPDATE `scores` SET `total_score` = CASE `id`");
-
-                        foreach (var row in pendingUpdates)
-                            statementBuilder.AppendLine($"WHEN {row.id} THEN {row.newTotalScore}");
-
-                        statementBuilder.AppendLine("END WHERE `id` IN (");
-                        statementBuilder.AppendLine(string.Join(',', pendingUpdates.Select(u => u.id)));
-                        statementBuilder.AppendLine(")");
-
-                        conn.Execute(statementBuilder.ToString());
-                    }
+                    DatabaseHelper.BatchUpdateScoresTable(conn, "scores", "id", "total_score", pendingUpdates);
 
                     if (RunIndexing && elasticItems.Count > 0)
                     {
@@ -233,7 +215,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
                 }
 
                 elasticItems.Clear();
-                statementBuilder.Clear();
                 pendingUpdates.Clear();
             }
         }

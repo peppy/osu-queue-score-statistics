@@ -2,6 +2,9 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Dapper;
 using Dapper.Contrib.Extensions;
@@ -213,6 +216,32 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Helpers
                 transaction);
 
             return standing.user_type == 1 || standing.user_warnings > 0;
+        }
+
+        /// <summary>
+        /// For the given table and column, update all provided (id, value) pairs using CASE..WHEN.
+        /// </summary>
+        /// <remarks>
+        /// This is the most efficient and low overhead method of updating batch values that we've found to date.
+        /// </remarks>
+        public static void BatchUpdateScoresTable<T>(MySqlConnection conn, string tableName, string idColumnName, string valueColumnName, List<(ulong id, T val)> values)
+            where T : struct
+        {
+            if (!values.Any())
+                return;
+
+            var statementBuilder = new StringBuilder();
+
+            statementBuilder.AppendLine($"UPDATE {tableName} SET {valueColumnName} = CASE {idColumnName}");
+
+            foreach (var row in values)
+                statementBuilder.AppendLine($"WHEN {row.id} THEN {row.val}");
+
+            statementBuilder.AppendLine($"END WHERE {idColumnName} IN (");
+            statementBuilder.AppendLine(string.Join(',', values.Select(u => u.id)));
+            statementBuilder.AppendLine(")");
+
+            conn.Execute(statementBuilder.ToString());
         }
     }
 }
