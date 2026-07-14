@@ -15,6 +15,13 @@ using StatsdClient;
 
 namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
 {
+    /// <summary>
+    /// Processor used to help in deploying changes to score multipliers.
+    /// After a score multiplier change is deployed and propagated to this project, this processor will ensure
+    /// that all incoming scores adhere to the new multipliers, using <see cref="SoloScoreData.TotalScoreWithoutMods"/>.
+    /// When a score multiplier change is not in progress, this processor is expected to do mostly nothing,
+    /// but it is left in place for future use.
+    /// </summary>
     [UsedImplicitly]
     public class ScoreMultiplierValidator : IProcessor
     {
