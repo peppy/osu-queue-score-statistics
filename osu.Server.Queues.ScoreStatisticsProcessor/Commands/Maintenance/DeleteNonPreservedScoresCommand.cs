@@ -130,9 +130,10 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
         {
             int consecutiveS3Failures = 0;
 
-            long count = await db.QuerySingleAsync<long>(new CommandDefinition($"SELECT COUNT(id) FROM `{scores_cleanup_table}`", cancellationToken: cancellationToken));
+            long count = await db.QuerySingleAsync<long>(new CommandDefinition($"SELECT COUNT(id) FROM `{scores_cleanup_table}`", cancellationToken: cancellationToken, commandTimeout: 3600));
             long countWithReplay =
-                await db.QuerySingleAsync<long>(new CommandDefinition($"SELECT COUNT(id) FROM `{scores_cleanup_table}` WHERE `has_replay` = 1", cancellationToken: cancellationToken));
+                await db.QuerySingleAsync<long>(new CommandDefinition($"SELECT COUNT(id) FROM `{scores_cleanup_table}` WHERE `has_replay` = 1", cancellationToken: cancellationToken,
+                    commandTimeout: 3600));
             Console.WriteLine($"Partition contains {count:N0} scores ({countWithReplay:N0} with replays).");
 
             DogStatsd.Increment("total_scores_deleted", (int)count);
