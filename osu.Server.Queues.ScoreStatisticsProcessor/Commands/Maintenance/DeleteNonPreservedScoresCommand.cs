@@ -166,6 +166,8 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
                     if (Verbose)
                         Console.WriteLine($"Deleting replay {score.id}...");
 
+                    bool success;
+
                     if (score.is_legacy_score)
                     {
                         if (score.legacy_score_id < 1)
@@ -178,7 +180,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
 
                         var result = await s3.DeleteObjectAsync(rulesetSpecifics.ReplayBucket, score.legacy_score_id!.Value.ToString(CultureInfo.InvariantCulture), cancellationToken);
 
-                        bool success = await checkS3Success(result);
+                        success = await checkS3Success(result);
                         DogStatsd.Increment("replays_deleted", tags: ["type:legacy", $"success:{success}"]);
 
                         DogStatsd.Increment("legacy_table_scores_deleted");
@@ -191,8 +193,14 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
                             Console.WriteLine($"S3 purge s3://{S3.REPLAYS_BUCKET}/{score.id.ToString(CultureInfo.InvariantCulture)}...");
 
                         var result = await s3.DeleteObjectAsync(S3.REPLAYS_BUCKET, score.id.ToString(CultureInfo.InvariantCulture), cancellationToken);
-                        bool success = await checkS3Success(result);
+                        success = await checkS3Success(result);
                         DogStatsd.Increment("replays_deleted", tags: ["type:new", $"success:{success}"]);
+                    }
+
+                    if (success)
+                    {
+                        // Mark scores after replay is deleted so in the case of a resume run, we don't need to call S3.
+                        await db.ExecuteAsync($"UPDATE {scores_cleanup_table} SET has_replay = 0 WHERE id = @scoreId", new { scoreId = score.id });
                     }
 
                     if (consecutiveS3Failures > 10)
