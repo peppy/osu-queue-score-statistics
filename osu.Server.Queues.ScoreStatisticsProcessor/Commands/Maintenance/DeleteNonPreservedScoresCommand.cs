@@ -200,7 +200,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
                     if (success)
                     {
                         // Mark scores after replay is deleted so in the case of a resume run, we don't need to call S3.
-                        await db.ExecuteAsync($"UPDATE {scores_cleanup_table} SET has_replay = 0 WHERE score_id = @scoreId", new { scoreId = score.id });
+                        await db.ExecuteAsync($"UPDATE {scores_cleanup_table} SET has_replay = 0 WHERE id = @scoreId", new { scoreId = score.id });
                     }
 
                     if (consecutiveS3Failures > 10)
