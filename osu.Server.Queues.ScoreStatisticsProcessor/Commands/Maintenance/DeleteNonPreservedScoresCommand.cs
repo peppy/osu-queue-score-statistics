@@ -191,10 +191,8 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
                             DogStatsd.Increment("replays_deleted", tags: ["type:legacy", $"success:{success}"]);
                             DogStatsd.Increment("legacy_table_scores_deleted");
 
-                            {
-                                await threadDb.ExecuteAsync($"DELETE FROM {rulesetSpecifics.ReplayTable} WHERE score_id = @scoreId", new { scoreId = score.legacy_score_id });
-                                await threadDb.ExecuteAsync($"DELETE FROM {rulesetSpecifics.HighScoreTable} WHERE score_id = @scoreId", new { scoreId = score.legacy_score_id });
-                            }
+                            await threadDb.ExecuteAsync($"DELETE FROM {rulesetSpecifics.ReplayTable} WHERE score_id = @scoreId", new { scoreId = score.legacy_score_id });
+                            await threadDb.ExecuteAsync($"DELETE FROM {rulesetSpecifics.HighScoreTable} WHERE score_id = @scoreId", new { scoreId = score.legacy_score_id });
                         }
                         else
                         {
