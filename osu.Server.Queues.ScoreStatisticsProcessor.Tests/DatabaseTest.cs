@@ -46,7 +46,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
 
         private Exception? firstError;
 
-        protected DatabaseTest(AssemblyName[]? externalProcessorAssemblies = null)
+        protected DatabaseTest(AssemblyName[]? externalProcessorAssemblies = null, string[]? disabledProcessors = null)
         {
             cancellationSource = Debugger.IsAttached
                 ? new CancellationTokenSource()
@@ -54,7 +54,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
 
             Environment.SetEnvironmentVariable("REALTIME_DIFFICULTY", "0");
 
-            Processor = new ScoreStatisticsQueueProcessor(externalProcessorAssemblies: externalProcessorAssemblies);
+            Processor = new ScoreStatisticsQueueProcessor(externalProcessorAssemblies: externalProcessorAssemblies, disabledProcessors: disabledProcessors);
             Processor.Error += processorOnError;
 
             Processor.ClearQueue();

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Dapper;
 using osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance;
 using osu.Server.Queues.ScoreStatisticsProcessor.Models;
+using osu.Server.Queues.ScoreStatisticsProcessor.Processors;
 using Xunit;
 
 namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
@@ -14,6 +15,9 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
         private readonly Beatmap beatmap;
 
         public MarkNonPreservedScoresCommandTest()
+            // The UserTotalPerformanceProcessor does realtime non-preserved marking.
+            // In these tests, we want to test the batch version of this and therefore must bypass the realtime processing.
+            : base(disabledProcessors: [nameof(UserTotalPerformanceProcessor)])
         {
             beatmap = AddBeatmap();
 
