@@ -167,7 +167,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor
         {
             var stopwatch = new Stopwatch();
             var tags = new List<string>();
-            var postTransactionActions = new List<Action>();
+            var postTransactionActions = new List<Action<ProcessorContext>>();
 
             try
             {
@@ -263,7 +263,11 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor
                     {
                         try
                         {
-                            action.Invoke();
+                            action.Invoke(new ProcessorContext
+                            {
+                                Connection = conn,
+                                ElasticProcessor = elasticQueueProcessor,
+                            });
                         }
                         catch (Exception e)
                         {

@@ -29,13 +29,14 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
         /// </remarks>
         public bool RunOnLegacyScores => true;
 
-        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction, List<Action> postTransactionActions,
-                                        DogStatsdService dogStatsd)
+        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction,
+                                        List<Action<ProcessorContext>> postTransactionActions, DogStatsdService dogStatsd)
         {
             // not applicable because `ApplyToUserStats()` does nothing.
         }
 
-        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction, List<Action> postTransactionActions, DogStatsdService dogStatsd)
+        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction, List<Action<ProcessorContext>> postTransactionActions,
+                                     DogStatsdService dogStatsd)
         {
             // not applicable.
             // this processor is pretty much an orchestrator of external calls based on a few db queries

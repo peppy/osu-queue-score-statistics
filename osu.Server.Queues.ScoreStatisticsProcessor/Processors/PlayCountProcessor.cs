@@ -27,7 +27,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
 
         public bool RunOnLegacyScores => false;
 
-        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction, List<Action> postTransactionActions,
+        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction, List<Action<ProcessorContext>> postTransactionActions,
                                         DogStatsdService dogStatsd)
         {
             if (previousVersion >= 1)
@@ -40,7 +40,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
             }
         }
 
-        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction, List<Action> postTransactionActions, DogStatsdService dogStatsd)
+        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction, List<Action<ProcessorContext>> postTransactionActions, DogStatsdService dogStatsd)
         {
             const int beatmap_count = 12;
             const int over_time = 120;
@@ -82,7 +82,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
             }
         }
 
-        private static void adjustGlobalBeatmapPlaycount(SoloScore score, MySqlConnection conn, MySqlTransaction transaction, List<Action> postTransactionActions)
+        private static void adjustGlobalBeatmapPlaycount(SoloScore score, MySqlConnection conn, MySqlTransaction transaction, List<Action<ProcessorContext>> postTransactionActions)
         {
             // We want to reduce database overhead here, so we only update the global beatmap playcount every n plays.
             // Note that we use a non-round number to make the display more natural.
@@ -108,7 +108,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
 
                 // Reindex beatmap occasionally.
                 if (RNG.Next(0, 10) == 0)
-                    postTransactionActions.Add(() => WebRequestHelper.RunSharedInteropCommand("indexing/bulk", "POST", new { beatmapset = new[] { score.beatmap.beatmapset_id } }));
+                    postTransactionActions.Add(_ => WebRequestHelper.RunSharedInteropCommand("indexing/bulk", "POST", new { beatmapset = new[] { score.beatmap.beatmapset_id } }));
 
                 // TODO: announce playcount milestones
                 // const int notify_amount = 1000000;

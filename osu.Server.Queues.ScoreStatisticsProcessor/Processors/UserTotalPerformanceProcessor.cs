@@ -32,19 +32,21 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
         private readonly ConcurrentDictionary<int, MemoryCache> rankScoreIndexPartitionCache =
             new ConcurrentDictionary<int, MemoryCache>();
 
-        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction, List<Action> postTransactionActions,
+        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction,
+                                        List<Action<ProcessorContext>> postTransactionActions,
                                         DogStatsdService dogStatsd)
         {
         }
 
-        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction, List<Action> postTransactionActions, DogStatsdService dogStatsd)
+        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction, List<Action<ProcessorContext>> postTransactionActions,
+                                     DogStatsdService dogStatsd)
         {
             var dbInfo = LegacyDatabaseHelper.GetRulesetSpecifics(score.ruleset_id);
 
             if (DatabaseHelper.IsUserRestricted(conn, userStats.user_id, transaction))
                 return;
 
-            markNonPreserved(score, conn, transaction).Wait();
+            markNonPreserved(score, conn, transaction, postTransactionActions).Wait();
             UpdateUserStatsAsync(userStats, score.ruleset_id, conn, transaction).Wait();
             updateGlobalRank(userStats, conn, transaction, dbInfo).Wait();
         }
@@ -81,7 +83,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
             (userStats.rank_score, userStats.accuracy_new) = UserTotalPerformanceAggregateHelper.CalculateUserTotalPerformanceAggregates(userStats.user_id, scores);
         }
 
-        private async Task markNonPreserved(SoloScore score, MySqlConnection conn, MySqlTransaction transaction)
+        private async Task markNonPreserved(SoloScore score, MySqlConnection conn, MySqlTransaction transaction, List<Action<ProcessorContext>> postTransactionActions)
         {
             List<SoloScore> scores = (await conn.QueryAsync<SoloScore>(
                 """
@@ -116,11 +118,10 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
                     scoreId = s.id
                 }, transaction: transaction);
 
-                // TODO: make this work
-                // elasticQueueProcessor.PushToQueue(new ElasticQueuePusher.ElasticScoreItem
-                // {
-                //     ScoreId = (long?)s.id
-                // });
+                postTransactionActions.Add(context =>
+                {
+                    context.ElasticProcessor.PushToQueue(new ElasticQueuePusher.ElasticScoreItem { ScoreId = (long?)s.id });
+                });
             }
         }
 
