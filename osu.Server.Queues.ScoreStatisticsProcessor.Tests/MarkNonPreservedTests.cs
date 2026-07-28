@@ -18,11 +18,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
         public MarkNonPreservedTests()
         {
             beatmap = AddBeatmap();
-
-            using var db = Processor.GetDatabaseConnection();
-
-            db.Execute("DELETE FROM `multiplayer_playlist_item_scores`");
-            db.Execute("TRUNCATE TABLE `score_pins`");
         }
 
         [Fact]

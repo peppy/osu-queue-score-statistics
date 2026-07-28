@@ -87,6 +87,10 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
 
                 db.Execute("TRUNCATE TABLE `osu_user_performance_rank`");
                 db.Execute("TRUNCATE TABLE `osu_user_performance_rank_highest`");
+
+                // Used in mark non-presrve tests.
+                db.Execute("TRUNCATE TABLE `multiplayer_playlist_item_scores`");
+                db.Execute("TRUNCATE TABLE `score_pins`");
             }
 
             BeatmapStore.PurgeCaches();
