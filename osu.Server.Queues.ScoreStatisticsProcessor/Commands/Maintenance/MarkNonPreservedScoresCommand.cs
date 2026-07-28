@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using Dapper;
 using McMaster.Extensions.CommandLineUtils;
 using MySqlConnector;
-using osu.Game.Extensions;
 using osu.Server.QueueProcessor;
 using osu.Server.Queues.ScoreStatisticsProcessor.Helpers;
 using osu.Server.Queues.ScoreStatisticsProcessor.Models;
@@ -239,9 +238,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
             );
         }
 
-        private static readonly HashSet<string> a_hash_set = new HashSet<string>();
-        private static readonly HashSet<string> b_hash_set = new HashSet<string>();
-
         public static bool CheckIsUserHigh(IEnumerable<SoloScore> userScores, SoloScore candidate, out HashSet<SoloScore> preservedAlternatives)
         {
             var scores = userScores.Where(s =>
@@ -296,13 +292,8 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
                 if (aMods.Length != bMods.Length)
                     return false;
 
-                a_hash_set.Clear();
-                a_hash_set.AddRange(aMods.Select(m => m.Acronym));
-
-                b_hash_set.Clear();
-                b_hash_set.AddRange(bMods.Select(m => m.Acronym));
-
-                return a_hash_set.SetEquals(b_hash_set);
+                return new HashSet<string>(aMods.Select(m => m.Acronym))
+                    .SetEquals(bMods.Select(m => m.Acronym));
             }
         }
     }
