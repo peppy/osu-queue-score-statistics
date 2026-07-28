@@ -51,12 +51,12 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
         // This processor needs to run after the play count and hit statistics have been applied, at very least.
         public int Order => int.MaxValue - 1;
 
-        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction, List<Action> postTransactionActions,
+        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction, List<Action<ProcessorContext>> postTransactionActions,
                                         DogStatsdService dogStatsd)
         {
         }
 
-        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction, List<Action> postTransactionActions, DogStatsdService dogStatsd)
+        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction, List<Action<ProcessorContext>> postTransactionActions, DogStatsdService dogStatsd)
         {
             if (score.beatmap!.approved <= 0)
                 return;
@@ -94,7 +94,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
 
                 foreach (var awardedMedal in awarder.Check(availableMedalsForUser, context))
                 {
-                    postTransactionActions.Add(() => awardMedal(score, awardedMedal));
+                    postTransactionActions.Add(_ => awardMedal(score, awardedMedal));
                 }
             }
         }

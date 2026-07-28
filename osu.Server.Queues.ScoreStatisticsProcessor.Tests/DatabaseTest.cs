@@ -46,7 +46,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
 
         private Exception? firstError;
 
-        protected DatabaseTest(AssemblyName[]? externalProcessorAssemblies = null)
+        protected DatabaseTest(AssemblyName[]? externalProcessorAssemblies = null, string[]? disabledProcessors = null)
         {
             cancellationSource = Debugger.IsAttached
                 ? new CancellationTokenSource()
@@ -54,7 +54,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
 
             Environment.SetEnvironmentVariable("REALTIME_DIFFICULTY", "0");
 
-            Processor = new ScoreStatisticsQueueProcessor(externalProcessorAssemblies: externalProcessorAssemblies);
+            Processor = new ScoreStatisticsQueueProcessor(externalProcessorAssemblies: externalProcessorAssemblies, disabledProcessors: disabledProcessors);
             Processor.Error += processorOnError;
 
             Processor.ClearQueue();
@@ -87,6 +87,10 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
 
                 db.Execute("TRUNCATE TABLE `osu_user_performance_rank`");
                 db.Execute("TRUNCATE TABLE `osu_user_performance_rank_highest`");
+
+                // Used in mark non-presrve tests.
+                db.Execute("TRUNCATE TABLE `multiplayer_score_links`");
+                db.Execute("TRUNCATE TABLE `score_pins`");
             }
 
             BeatmapStore.PurgeCaches();

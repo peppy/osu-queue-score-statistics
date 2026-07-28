@@ -170,7 +170,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
                     break;
 
                 // check whether this score is a user high (either total_score or pp)
-                if (checkIsUserHigh(scores, score, out var preservedAlternatives))
+                if (CheckIsUserHigh(scores, score, out var preservedAlternatives))
                 {
                     if (Verbose)
                         formatOutput(score, false, "user high");
@@ -242,7 +242,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
         private static readonly HashSet<string> a_hash_set = new HashSet<string>();
         private static readonly HashSet<string> b_hash_set = new HashSet<string>();
 
-        private static bool checkIsUserHigh(IEnumerable<SoloScore> userScores, SoloScore candidate, out HashSet<SoloScore> preservedAlternatives)
+        public static bool CheckIsUserHigh(IEnumerable<SoloScore> userScores, SoloScore candidate, out HashSet<SoloScore> preservedAlternatives)
         {
             var scores = userScores.Where(s =>
                 s.beatmap_id == candidate.beatmap_id

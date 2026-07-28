@@ -20,8 +20,11 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
     /// </summary>
     public class UserTotalPerformanceProcessor : IProcessor
     {
-        // This processor needs to run after the score's PP value has been processed.
-        public int Order => ScorePerformanceProcessor.ORDER + 1;
+        // This processor needs to run after the score's PP value has been processed,
+        // and any non-preserved scores have been cleaned up (for bonus PP calculation).
+        public const int ORDER = MarkNonPreservedProcessor.ORDER + 1;
+
+        public int Order => ORDER;
 
         public bool RunOnFailedScores => false;
 
@@ -31,12 +34,14 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
         private readonly ConcurrentDictionary<int, MemoryCache> rankScoreIndexPartitionCache =
             new ConcurrentDictionary<int, MemoryCache>();
 
-        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction, List<Action> postTransactionActions,
+        public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction,
+                                        List<Action<ProcessorContext>> postTransactionActions,
                                         DogStatsdService dogStatsd)
         {
         }
 
-        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction, List<Action> postTransactionActions, DogStatsdService dogStatsd)
+        public void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction, List<Action<ProcessorContext>> postTransactionActions,
+                                     DogStatsdService dogStatsd)
         {
             var dbInfo = LegacyDatabaseHelper.GetRulesetSpecifics(score.ruleset_id);
 

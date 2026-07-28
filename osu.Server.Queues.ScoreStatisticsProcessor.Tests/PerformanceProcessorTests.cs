@@ -66,7 +66,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
                 attr.SpeedDifficulty = 3;
             });
 
-            SetScoreForBeatmap(TEST_BEATMAP_ID, score =>
+            var score1 = SetScoreForBeatmap(TEST_BEATMAP_ID, score =>
             {
                 score.Score.ScoreData.Statistics[HitResult.Great] = 100;
                 score.Score.max_combo = 100;
@@ -79,7 +79,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
             WaitForDatabaseState("SELECT rank_score FROM osu_user_stats WHERE user_id = 2", 131, CancellationToken);
 
             // purposefully identical to score above, to confirm that you don't get pp for two scores on the same map twice
-            SetScoreForBeatmap(TEST_BEATMAP_ID, score =>
+            var score2 = SetScoreForBeatmap(TEST_BEATMAP_ID, score =>
             {
                 score.Score.ScoreData.Statistics[HitResult.Great] = 100;
                 score.Score.max_combo = 100;
@@ -88,8 +88,11 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
                 score.Score.preserve = true;
             });
 
-            // 129pp from the single score above + 4pp from playcount bonus
-            WaitForDatabaseState("SELECT rank_score FROM osu_user_stats WHERE user_id = 2", 133, CancellationToken);
+            // 129pp from the single score above + 2pp from playcount bonus
+            WaitForDatabaseState("SELECT rank_score FROM osu_user_stats WHERE user_id = 2", 131, CancellationToken);
+
+            WaitForDatabaseState($"SELECT preserve FROM scores WHERE id = {score1.Score.id}", true, CancellationToken);
+            WaitForDatabaseState($"SELECT preserve FROM scores WHERE id = {score2.Score.id}", false, CancellationToken);
         }
 
         /// <summary>
@@ -614,10 +617,10 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
             SetScoreForBeatmap(beatmap.beatmap_id, s =>
             {
                 s.Score.preserve = s.Score.ranked = true;
-                s.Score.pp = 600; // ~606 pp total, including bonus pp
+                s.Score.pp = 600; // ~604 pp total, including bonus pp
             });
 
-            WaitForDatabaseState("SELECT `r13`, `r14` FROM `osu_user_performance_rank` WHERE `user_id` = @userId AND `mode` = @mode", (597, 395), CancellationToken, new
+            WaitForDatabaseState("SELECT `r13`, `r14` FROM `osu_user_performance_rank` WHERE `user_id` = @userId AND `mode` = @mode", (597, 397), CancellationToken, new
             {
                 userId = 2,
                 mode = 0,

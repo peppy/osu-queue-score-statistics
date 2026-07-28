@@ -47,7 +47,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor
         /// <param name="transaction">Ongoing database transactions.</param>
         /// <param name="postTransactionActions">Queue of relevant actions to execute after the transaction ends.</param>
         /// <param name="dogStatsd">Instance of <see cref="DogStatsdService"/> to use for collecting metrics.</param>
-        void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction, List<Action> postTransactionActions,
+        void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction, List<Action<ProcessorContext>> postTransactionActions,
                                  DogStatsdService dogStatsd);
 
         /// <summary>
@@ -59,7 +59,8 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor
         /// <param name="transaction">Ongoing database transactions.</param>
         /// <param name="postTransactionActions">Queue of relevant actions to execute after the transaction ends.</param>
         /// <param name="dogStatsd">Instance of <see cref="DogStatsdService"/> to use for collecting metrics.</param>
-        void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction, List<Action> postTransactionActions, DogStatsdService dogStatsd);
+        void ApplyToUserStats(SoloScore score, UserStats userStats, MySqlConnection conn, MySqlTransaction transaction, List<Action<ProcessorContext>> postTransactionActions,
+                              DogStatsdService dogStatsd);
 
         /// <summary>
         /// Adjust any global statistics outside of the user transaction.
