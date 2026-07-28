@@ -19,8 +19,8 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
     /// </summary>
     public class MarkNonPreservedProcessor : IProcessor
     {
-        // This processor needs to run before user total processor as bonus PP relies on the preserved flag.
-        public const int ORDER = UserTotalPerformanceProcessor.ORDER - 1;
+        // This processor needs to run after PP is calculated as this is used in cleanup rules.
+        public const int ORDER = ScorePerformanceProcessor.ORDER + 1;
 
         public int Order => ORDER;
 

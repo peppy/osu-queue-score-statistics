@@ -20,8 +20,9 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
     /// </summary>
     public class UserTotalPerformanceProcessor : IProcessor
     {
-        // This processor needs to run after the score's PP value has been processed.
-        public const int ORDER = ScorePerformanceProcessor.ORDER + 1;
+        // This processor needs to run after the score's PP value has been processed,
+        // and any non-preserved scores have been cleaned up (for bonus PP calculation).
+        public const int ORDER = MarkNonPreservedProcessor.ORDER + 1;
 
         public int Order => ORDER;
 
