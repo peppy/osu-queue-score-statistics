@@ -2,11 +2,9 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Dapper;
-using Microsoft.Extensions.Caching.Memory;
 using MySqlConnector;
 using osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance;
 using osu.Server.Queues.ScoreStatisticsProcessor.Models;
@@ -27,10 +25,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
         public bool RunOnFailedScores => false;
 
         public bool RunOnLegacyScores => true;
-
-        // [ruleset_id, [rank_score, count_users_above]]
-        private readonly ConcurrentDictionary<int, MemoryCache> rankScoreIndexPartitionCache =
-            new ConcurrentDictionary<int, MemoryCache>();
 
         public void RevertFromUserStats(SoloScore score, UserStats userStats, int previousVersion, MySqlConnection conn, MySqlTransaction transaction,
                                         List<Action<ProcessorContext>> postTransactionActions,
