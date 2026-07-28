@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using MySqlConnector;
-using osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance;
 using osu.Server.Queues.ScoreStatisticsProcessor.Helpers;
 using osu.Server.Queues.ScoreStatisticsProcessor.Models;
 using StatsdClient;
@@ -22,7 +21,9 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
     public class UserTotalPerformanceProcessor : IProcessor
     {
         // This processor needs to run after the score's PP value has been processed.
-        public int Order => ScorePerformanceProcessor.ORDER + 1;
+        public const int ORDER = ScorePerformanceProcessor.ORDER + 1;
+
+        public int Order => ORDER;
 
         public bool RunOnFailedScores => false;
 
@@ -46,7 +47,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
             if (DatabaseHelper.IsUserRestricted(conn, userStats.user_id, transaction))
                 return;
 
-            markNonPreserved(score, conn, transaction, postTransactionActions).Wait();
             UpdateUserStatsAsync(userStats, score.ruleset_id, conn, transaction).Wait();
             updateGlobalRank(userStats, conn, transaction, dbInfo).Wait();
         }
@@ -81,48 +81,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
                 }, transaction: transaction)).ToList();
 
             (userStats.rank_score, userStats.accuracy_new) = UserTotalPerformanceAggregateHelper.CalculateUserTotalPerformanceAggregates(userStats.user_id, scores);
-        }
-
-        private async Task markNonPreserved(SoloScore score, MySqlConnection conn, MySqlTransaction transaction, List<Action<ProcessorContext>> postTransactionActions)
-        {
-            List<SoloScore> scores = (await conn.QueryAsync<SoloScore>(
-                """
-                SELECT
-                    s.id, s.beatmap_id, s.ranked,
-                    IF(s.data->'$.mods' IS NULL, '{}', JSON_OBJECT('mods', s.data->'$.mods')) AS data,
-                    s.total_score, s.legacy_total_score, s.pp
-                FROM scores s
-                WHERE
-                    s.user_id = @UserId
-                    AND s.ruleset_id = @RulesetId
-                    AND s.beatmap_id = @BeatmapId
-                    AND s.pp IS NOT NULL
-                    AND s.preserve = 1
-                    AND NOT EXISTS (SELECT 1 FROM score_pins pins WHERE pins.score_id = s.id AND pins.user_id = @UserId AND pins.ruleset_id = @RulesetId)
-                    AND NOT EXISTS (SELECT 1 FROM multiplayer_playlist_item_scores mp WHERE mp.score_id = s.id AND mp.user_id = @UserId);
-                """, new
-                {
-                    UserId = score.user_id,
-                    RulesetId = score.ruleset_id,
-                    BeatmapId = score.beatmap_id,
-                }, transaction: transaction)).ToList();
-
-            foreach (var s in scores)
-            {
-                // check whether this score is a user high (either total_score or pp)
-                if (MarkNonPreservedScoresCommand.CheckIsUserHigh(scores, s, out _))
-                    continue;
-
-                await conn.ExecuteAsync("UPDATE scores SET preserve = 0, unix_updated_at = UNIX_TIMESTAMP() WHERE id = @scoreId", new
-                {
-                    scoreId = s.id
-                }, transaction: transaction);
-
-                postTransactionActions.Add(context =>
-                {
-                    context.ElasticProcessor.PushToQueue(new ElasticQueuePusher.ElasticScoreItem { ScoreId = (long?)s.id });
-                });
-            }
         }
 
         private async Task updateGlobalRank(UserStats userStats, MySqlConnection connection, MySqlTransaction? transaction, LegacyDatabaseHelper.RulesetDatabaseInfo dbInfo)

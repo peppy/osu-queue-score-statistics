@@ -15,9 +15,9 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
         private readonly Beatmap beatmap;
 
         public MarkNonPreservedScoresCommandTest()
-            // The UserTotalPerformanceProcessor does realtime non-preserved marking.
+            // The `MarkNonPreservedProcessor` does realtime non-preserved marking.
             // In these tests, we want to test the batch version of this and therefore must bypass the realtime processing.
-            : base(disabledProcessors: [nameof(UserTotalPerformanceProcessor)])
+            : base(disabledProcessors: [nameof(MarkNonPreservedProcessor)])
         {
             beatmap = AddBeatmap();
 

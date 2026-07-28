@@ -11,11 +11,11 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
     /// <summary>
     /// This tests realtime non-preserved marking, handled by `UserTotalPerformanceProcessor`.
     /// </summary>
-    public class MarkNonPreservedTests : DatabaseTest
+    public class MarkNonPreservedProcessorTests : DatabaseTest
     {
         private readonly Beatmap beatmap;
 
-        public MarkNonPreservedTests()
+        public MarkNonPreservedProcessorTests()
         {
             beatmap = AddBeatmap();
         }
