@@ -60,7 +60,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
 
             const int users_per_fetch = 10000;
 
-            int totalCount = await db.QuerySingleAsync<int>($"SELECT COUNT(*) FROM {databaseInfo.UserStatsTable} WHERE {Where}");
+            int totalCount = await db.QuerySingleAsync<int>($"SELECT COUNT(*) FROM {databaseInfo.UserStatsTable} WHERE {Where}", commandTimeout: 3600);
             Console.WriteLine($"Processing a total of {totalCount} users");
 
             int lastUserId = 0;
