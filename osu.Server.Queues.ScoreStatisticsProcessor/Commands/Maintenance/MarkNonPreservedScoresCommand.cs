@@ -72,7 +72,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
                     Console.WriteLine($"Continuing processing starting from user_id {lastUserId}...");
 
                 int[] userIds =
-                    (await db.QueryAsync<int>($"SELECT `user_id` FROM {databaseInfo.UserStatsTable} WHERE {Where} AND user_id > {lastUserId} ORDER BY user_id LIMIT {users_per_fetch}")).ToArray();
+                    (await db.QueryAsync<int>($"SELECT `user_id` FROM {databaseInfo.UserStatsTable} WHERE {Where} AND user_id > {lastUserId} ORDER BY user_id LIMIT {users_per_fetch}", commandTimeout: 3600)).ToArray();
 
                 if (userIds.Length == 0)
                     break;
