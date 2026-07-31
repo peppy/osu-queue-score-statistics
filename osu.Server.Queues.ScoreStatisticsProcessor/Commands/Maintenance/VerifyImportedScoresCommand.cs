@@ -85,6 +85,8 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
 
             while (!cancellationToken.IsCancellationRequested)
             {
+                // TODO: make this not fall over if there's a huge gap with no scores (will timeout currently).
+                // should probably work more like https://github.com/ppy/osu-queue-score-statistics/blob/61b5a46d53bd28b4b8adf4fa3cc09681fcd3528d/osu.Server.Queues.ScoreStatisticsProcessor/Commands/Maintenance/VerifyImportedScoresCommand.cs#L90
                 IEnumerable<ComparableScore> importedScores = await conn.QueryAsync(
                     "SELECT `id`, "
                     + "`ruleset_id`, "
