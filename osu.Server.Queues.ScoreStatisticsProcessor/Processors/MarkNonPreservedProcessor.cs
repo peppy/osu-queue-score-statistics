@@ -17,6 +17,8 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
     /// </summary>
     public class MarkNonPreservedProcessor : IProcessor
     {
+        private const string scores_marked_metric = $@"{nameof(MarkNonPreservedProcessor)}.scores_marked_non_preserved";
+
         // This processor needs to run after PP is calculated as this is used in cleanup rules.
         public const int ORDER = ScorePerformanceProcessor.ORDER + 1;
 
@@ -72,6 +74,8 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
                 {
                     context.ElasticProcessor.PushToQueue(new ElasticQueuePusher.ElasticScoreItem { ScoreId = (long?)s.id });
                 });
+
+                dogStatsd.Increment(scores_marked_metric);
             }
         }
 
