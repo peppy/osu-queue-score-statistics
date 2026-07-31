@@ -153,7 +153,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Helpers
                     bool isRanked = highScore.ShouldPreserve;
 
                     highScore.InsertSql =
-                        $"({highScore.user_id}, {rulesetId}, {highScore.beatmap_id}, {(highScore.replay ? "1" : "0")}, {(highScore.ShouldPreserve ? "1" : "0")}, {(isRanked ? "1" : "0")}, '{referenceScore.Rank.ToString()}', {(highScore.pass ? "1" : "0")}, {referenceScore.Accuracy}, {referenceScore.MaxCombo}, {referenceScore.TotalScore}, '{serialisedScore}', {highScore.pp?.ToString() ?? "null"}, {highScore.score_id}, {referenceScore.LegacyTotalScore}, '{highScore.date:yyyy-MM-dd HH:mm:ss}', {highScore.date.ToUnixTimeSeconds()})";
+                        $"({highScore.user_id}, {rulesetId}, {highScore.beatmap_id}, {(highScore.replay ? "1" : "0")}, {(highScore.ShouldPreserve ? "1" : "0")}, {(isRanked ? "1" : "0")}, '{referenceScore.Rank.ToString()}', {(highScore.pass ? "1" : "0")}, {referenceScore.Accuracy}, {referenceScore.MaxCombo}, {referenceScore.TotalScore}, '{serialisedScore}', {highScore.score_id}, {referenceScore.LegacyTotalScore}, '{highScore.date:yyyy-MM-dd HH:mm:ss}', {highScore.date.ToUnixTimeSeconds()})";
                 }
                 catch (Exception e)
                 {
@@ -174,7 +174,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Helpers
 
             bool first = true;
             StringBuilder insertBuilder = new StringBuilder(
-                "INSERT INTO scores (`user_id`, `ruleset_id`, `beatmap_id`, `has_replay`, `preserve`, `ranked`, `rank`, `passed`, `accuracy`, `max_combo`, `total_score`, `data`, `pp`, `legacy_score_id`, `legacy_total_score`, `ended_at`, `unix_updated_at`) VALUES ");
+                "INSERT INTO scores (`user_id`, `ruleset_id`, `beatmap_id`, `has_replay`, `preserve`, `ranked`, `rank`, `passed`, `accuracy`, `max_combo`, `total_score`, `data`, `legacy_score_id`, `legacy_total_score`, `ended_at`, `unix_updated_at`) VALUES ");
 
             scores = scores.Where(score => !string.IsNullOrEmpty(score.InsertSql)).ToArray();
 
