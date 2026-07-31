@@ -108,7 +108,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance.Scores
                     ? $"AND `pp` BETWEEN {MinPP ?? 0} AND {MaxPP ?? 1048576}"
                     : string.Empty;
 
-                var scores = (await db.QueryAsync<SoloScore>(
+                var scores = (await db.QueryAsync<SoloScore>(new CommandDefinition(
                     Backwards
                         ? $"SELECT * FROM scores WHERE `id` <= @CurrentScoreId AND `id` >= @LastScoreId {ppCondition} AND ranked = 1 AND preserve = 1 AND {Where} ORDER BY `id` DESC LIMIT @limit"
                         : $"SELECT * FROM scores WHERE `id` >= @CurrentScoreId AND `id` <= @LastScoreId {ppCondition} AND ranked = 1 AND preserve = 1 AND {Where} ORDER BY `id` LIMIT @limit",
@@ -117,7 +117,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance.Scores
                         CurrentScoreId = currentScoreId,
                         LastScoreId = lastScoreId,
                         limit = BatchSize
-                    }, commandTimeout: 600)).ToList();
+                    }, commandTimeout: 600, cancellationToken: cancellationToken))).ToList();
 
                 if (scores.Count == 0)
                     break;
