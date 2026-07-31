@@ -94,7 +94,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
                     + "`has_replay`, "
                     + "s.ranked,"
                     + "s.`rank`, "
-                    + "s.`pp`, "
                     + "s.`data`, "
                     + "h.* "
                     + "FROM scores s "
@@ -189,15 +188,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
                             continue;
 
                         var referenceScore = importedScore.ReferenceScore!;
-
-                        if (!check(importedScore.id, "performance", importedScore.pp ?? 0, importedScore.HighScore.pp ?? 0))
-                        {
-                            Interlocked.Increment(ref fail);
-                            requiresIndexing = true;
-
-                            // PP was reset (had a value in new table but no value in old) or doesn't match.
-                            sqlBuffer.Append($"UPDATE scores SET pp = {importedScore.HighScore.pp.ToString() ?? "NULL"} WHERE id = {importedScore.id};");
-                        }
 
                         if (!check(importedScore.id, "ranked", importedScore.ranked, true))
                         {
@@ -359,7 +349,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Maintenance
             public bool has_replay;
             public ScoreRank rank;
             public bool ranked;
-            public float? pp;
 
             public SoloScoreData ScoreData = new SoloScoreData();
 
