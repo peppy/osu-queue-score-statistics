@@ -127,7 +127,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance.Scores
                 await Task.WhenAll(Partitioner.Create(scores).GetPartitions(Threads).Select(async partition =>
                 {
                     List<(ulong id, double val)> updates = new List<(ulong id, double val)>();
-                    Dictionary<ushort, List<(ulong id, double val)>> legacyUpdates = new Dictionary<ushort, List<(ulong id, double val)>>();
 
                     connections.TryDequeue(out var connection);
 
@@ -151,14 +150,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance.Scores
                                     // pp is guaranteed to be non-null after this processing pathway.
                                     updates.Add((score.id, score.pp!.Value));
 
-                                    if (score.is_legacy_score)
-                                    {
-                                        if (!legacyUpdates.TryGetValue(score.ruleset_id, out var legacyRulesetUpdates))
-                                            legacyUpdates[score.ruleset_id] = legacyRulesetUpdates = new List<(ulong id, double val)>();
-
-                                        legacyRulesetUpdates.Add((score.id, score.pp!.Value));
-                                    }
-
                                     Interlocked.Increment(ref changedPp);
                                     elasticItems.Add(new ElasticQueuePusher.ElasticScoreItem { ScoreId = (long?)score.id });
                                 }
@@ -171,12 +162,6 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Commands.Performance.Scores
                     }
 
                     DatabaseHelper.BatchUpdateScoresTable(connection, tableName: "scores", idColumnName: "id", valueColumnName: "pp", updates);
-
-                    foreach (var kvp in legacyUpdates)
-                    {
-                        var ruleset = LegacyDatabaseHelper.GetRulesetSpecifics(kvp.Key);
-                        DatabaseHelper.BatchUpdateScoresTable(connection, tableName: ruleset.HighScoreTable, idColumnName: "score_id", valueColumnName: "pp", kvp.Value);
-                    }
 
                     connections.Enqueue(connection);
                 }));
