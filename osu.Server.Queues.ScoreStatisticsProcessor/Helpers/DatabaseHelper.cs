@@ -194,8 +194,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Helpers
 
             // since the beatmaps for the two scores are the same by definition of the method,
             // we can just copy them across without a refetch.
-            if (result != null)
-                result.beatmap = score.beatmap;
+            result?.beatmap = score.beatmap;
 
             return result;
         }
