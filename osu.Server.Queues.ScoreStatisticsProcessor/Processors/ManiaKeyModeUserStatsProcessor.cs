@@ -134,8 +134,9 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Processors
             if (updateIndex)
             {
                 // TODO: partitioned caching similar to UserTotalPerformanceProcessor.
-                keyModeStats.rank_score_index = await conn.QuerySingleAsync<int>($"SELECT COUNT(*) FROM {keyCountTableName} WHERE rank_score > {keyModeStats.rank_score}", transaction: transaction)
-                                                + 1;
+                keyModeStats.rank_score_index = await conn.QuerySingleAsync<int>(
+                    FormattableString.Invariant($"SELECT COUNT(*) FROM {keyCountTableName} WHERE rank_score > {keyModeStats.rank_score}"),
+                    transaction: transaction) + 1;
             }
         }
 
