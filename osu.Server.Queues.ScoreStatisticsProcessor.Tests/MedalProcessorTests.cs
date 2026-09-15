@@ -1029,7 +1029,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
             {
                 db.Execute("TRUNCATE TABLE `phpbb_users`");
                 db.Execute(
-                    "INSERT INTO `phpbb_users` (`user_id`, `username`, `country_acronym`, `user_permissions`, `user_sig`, `user_occ`, `user_interests`, `user_warnings`) VALUES (102, 'test', 'JP', '', '', '', '', 2)");
+                    "INSERT INTO `phpbb_users` (`user_id`, `username`, `country_acronym`, `user_sig`, `user_occ`, `user_interests`, `user_warnings`) VALUES (102, 'test', 'JP', '', '', '', 2)");
             }
 
             AddPackMedal(7, 40, new[] { beatmap });

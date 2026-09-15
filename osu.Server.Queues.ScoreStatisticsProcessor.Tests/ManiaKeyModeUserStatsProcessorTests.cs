@@ -22,7 +22,7 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Tests
                 db.Execute("TRUNCATE TABLE `osu_user_stats_mania_7k`");
 
                 db.Execute(
-                    "INSERT INTO `phpbb_users` (`user_id`, `username`, `country_acronym`, `user_permissions`, `user_sig`, `user_occ`, `user_interests`) VALUES (2, 'test', 'JP', '', '', '', '')");
+                    "INSERT INTO `phpbb_users` (`user_id`, `username`, `country_acronym`, `user_sig`, `user_occ`, `user_interests`) VALUES (2, 'test', 'JP', '', '', '')");
             }
         }
 
