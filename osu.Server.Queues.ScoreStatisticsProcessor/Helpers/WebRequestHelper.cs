@@ -29,7 +29,8 @@ namespace osu.Server.Queues.ScoreStatisticsProcessor.Helpers
 
         private static readonly HttpClient http = new HttpClient
         {
-            Timeout = TimeSpan.FromSeconds(1)
+            // Increased (temporarily?) due to slow responses from shared interop `/api/v2/scores/{id}` in `GetScoreRankOnBeatmapLeaderboard`.
+            Timeout = TimeSpan.FromSeconds(2)
         };
 
         public static HttpResponseMessage RunSharedInteropCommand(string command, string method = "GET", dynamic? postObject = null)
